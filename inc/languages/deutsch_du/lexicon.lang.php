@@ -2,6 +2,9 @@
 
 $l['lexicon_nav_main'] = "Lexikon";
 $l['lexicon_cat_delet_notice'] = "Sobald du diese Kategorie löscht, löscht du auch alle Einträge innerhalb dieser. Wirklich löschen?";
+$l['lexicon_entry_delet_notice'] = "Sobald du diesen Eintrag löscht, löscht du auch alle Einträge welchem diesem untergordnet sind. Wirklich löschen?";
+$l['lexicon_button_edit'] = "Bearbeiten";
+$l['lexicon_button_delete'] = "Löschen";
 
 // HEADERMELDUNGEN
 $l['lexicon_header_banner'] = '<a href="modcp.php?action=lexicon">Es {1} <b>{2}</b> {3} {4} fürs Lexikon zum freischalten vor!</a>';
