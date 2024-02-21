@@ -659,4 +659,3 @@ function lexicon_get_allchars($user_id) {
 	}
 	return $charas;  
 }
-?>
