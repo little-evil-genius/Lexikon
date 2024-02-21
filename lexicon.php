@@ -405,20 +405,20 @@ if ($lexicon_entry) {
         if ($mybb->usergroup['canmodcp'] == '1' || $pos !== false) {
             // Team kann immer 
             if ($mybb->usergroup['canmodcp'] == '1') {
-                $edit_button = "<a href=\"lexicon.php?edit=entry&eid=".$eid."\">Bearbeiten</a>";
-                $delete_button = "<a href=\"lexicon.php?delete_entry=".$eid."\">Löschen</a>";
+                $edit_button = "<a href=\"lexicon.php?edit=entry&eid=".$eid."\">".$lang->lexicon_button_edit."</a>";
+                $delete_button = "<a href=\"lexicon.php?delete_entry=".$eid."\" onClick=\"return confirm('".$lang->lexicon_entry_delet_notice."');\">".$lang->lexicon_button_delete."</a>";
                 eval("\$option_buttons_entry = \"".$templates->get("lexicon_entry_option")."\";");
             } else {
                 if ($user_edit_setting == 1 OR $user_delete_setting == 1) {
                     // Bearbeiten
                     if ($user_edit_setting == 1) {
-                        $edit_button = "<a href=\"lexicon.php?edit=entry&eid=".$eid."\">Bearbeiten</a>";
+                        $edit_button = "<a href=\"lexicon.php?edit=entry&eid=".$eid."\">".$lang->lexicon_button_edit."</a>";
                     } else {
                         $edit_button = "";
                     }
                     // Löschen
                     if ($user_delete_setting == 1) {
-                        $delete_button = "<a href=\"lexicon.php?delete_entry=".$eid."\">Löschen</a>";
+                        $delete_button = "<a href=\"lexicon.php?delete_entry=".$eid."\" onClick=\"return confirm('".$lang->lexicon_entry_delet_notice."');\">".$lang->lexicon_button_delete."</a>";
                     } else {
                         $delete_button = "";
                     }
@@ -501,11 +501,11 @@ if($mybb->get_input('edit') == "entry") {
 
     add_breadcrumb($lang->lexicon_nav_edit_entry);
 
-    // Nur Teamies können die Seite sehen   
+    // Nur Teamies und der entsprechende User können die Seite sehen   
     $sendedby = $db->fetch_field($db->simple_select("lexicon_entries", "uid", "eid = '".$eid."'"), "uid");
     $check = strpos($charastring, ",".$sendedby.",");
 
-    if($mybb->usergroup['canmodcp'] != '1' AND $check === false) { 
+    if($mybb->usergroup['canmodcp'] != '1' AND ($check === false AND $user_edit_setting == 1)) { 
         redirect('lexicon.php', $lang->lexicon_redirect_edit_error_entry);
         return;
     }
@@ -630,6 +630,8 @@ if($delete_entry) {
 
     // in Eintrag löschen
     $db->delete_query("lexicon_entries", "eid = '".$delete_entry."'");
+    // in Untereinträge von diesem Eintrag löschen
+    $db->delete_query("lexicon_entries", "parentlist = '".$delete_entry."'");
 
     redirect("lexicon.php", $lang->lexicon_redirect_delete_entry);
 }
