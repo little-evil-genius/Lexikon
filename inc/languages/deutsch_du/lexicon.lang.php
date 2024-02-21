@@ -4,9 +4,10 @@ $l['lexicon_nav_main'] = "Lexikon";
 $l['lexicon_cat_delet_notice'] = "Sobald du diese Kategorie löscht, löscht du auch alle Einträge innerhalb dieser. Wirklich löschen?";
 
 // HEADERMELDUNGEN
-$l['newentry_lexicon_headerbanner'] = '<div class="red_alert">Es {1} <a href="modcp.php?action=lexicon"><b>{2}</b> {3} {4}</a> fürs Lexikon zum freischalten vor!</div>';
+$l['lexicon_header_banner'] = '<a href="modcp.php?action=lexicon">Es {1} <b>{2}</b> {3} {4} fürs Lexikon zum freischalten vor!</a>';
 
 // WEITERLEITUNGSSEITEN
+$l['lexicon_redirect_modcp_delete'] = "User können keine Einträge hinzufügen, weswegen die Freischaltungsseite im Modcp deaktiviert ist. Du wirst nun zurückgeleitet auf die Hauptseite vom Modcp.";
 $l['lexicon_redirect_modcp_delete'] = "Der Eintrag fürs Lexikon wurde erfolgreich abgelehnt und gelöscht! Du wirst nun zurückgeleitet ins Modcp.";
 $l['lexicon_redirect_modcp_accept'] = "Der Eintrag fürs Lexikon wurde erfolgreich angenommen und freigeschaltet! Du wirst nun zurückgeleitet ins Modcp.";
 $l['lexicon_redirect_uninstall'] = "Das boardinterne Lexikon wurde vom Team nicht installiert! Du wirst nun auf die Hauptseite vom Board zurückgeleitet!";
@@ -25,17 +26,19 @@ $l['lexicon_redirect_delete_entry'] = "Der Eintrag wurde erfolgreich gelöscht! 
 // MODCP
 $l['lexicon_modcp_nav'] = "Neue Lexikon Einträge";
 $l['lexicon_modcp'] = "Lexikon Einträge freischalten";
-$l['lexicon_modcp_linktitel'] = "Linktitel:";
+$l['lexicon_modcp_linktitel'] = "Menuanzeige:";
 $l['lexicon_modcp_link'] = "Link:";
 $l['lexicon_modcp_sendby'] = "Eingereicht von:";
 $l['lexicon_modcp_entrytext'] = "Der neue Eintrag";
 $l['lexicon_modcp_externallink'] = "Dieser Eintrag ist nur externer Link zur Seite:<br>{1}";
-$l['lexicon_modcp_delete_button'] = "Eintrag ablehnen";
-$l['lexicon_modcp_accept_button'] = "Eintrag annehmen";
+$l['lexicon_modcp_delete_button'] = "Ablehnen";
+$l['lexicon_modcp_accept_button'] = "Annehmen";
+$l['lexicon_modcp_edit_button'] = "Bearbeiten";
+$l['lexicon_modcp_control_none'] = "Momentan gibt es keine Lexikon Einträge zum freischalten.";
 
 // INHALTSVERZEICHNIS
 $l['lexicon_contents'] = "Inhaltsverzeichnis";
-$l['lexicon_contents_desc'] = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. ";
+$l['lexicon_contents_desc'] = "Im Inhaltsverzeichnis findest du eine alphabetische Übersicht aller Einträge, die in unserem Lexikon enthalten sind.<br>Von A wie \"Anton\" bis Z wie \"Zeppelin\" - klicke auf den jeweiligen Link, um zu dem entsprechendem Eintrag zu gelangen. Jeder Eintrag ist einer Kategorie zugeordnet, die dir dabei hilft, gezielt nach Informationen zu suchen. Viel Spaß beim Stöbern und Entdecken!";
 
 // HINZUFÜGEN KATEGORIE
 $l['lexicon_nav_add_category'] = "Kategorie hinzufügen";
@@ -62,10 +65,9 @@ $l['lexicon_add_title_desc'] = "Wie lautet der volle Titel des Eintrages?";
 $l['lexicon_add_entrytext'] = "Der Eintrag";
 
 // MAINPAGE
-$l['lexicon_main_desc'] = "Wir wissen, wie überfordernd ein neues Forum und deren Hintergrund sein kann. Damit euch der Einstieg ins Far from Heaven leichter fällt, haben wir ein foreninternes Wiki für euch erstellt.<br>
+$l['lexicon_main_desc'] = "Herzlich willkommen im foreninternen Lexikon! Hier findest du eine Fülle von Informationen über die Welt, in der unser RPG spielt. Von der Geschichte und Geografie bis hin zu weiteren Hintergrundinformationen - hier ist alles für dich zusammengestellt. Unser Team hat sich viel Mühe gegeben, dieses Lexikon zu erstellen, um dir den Einstieg in unser Forum zu erleichtern.<br>
 <br>
-Solltet ihr immer noch Fragen haben, dann schreibt am besten direkt in den Support und das Team wird euch sicherlich helfen können. Wir werden uns dann auch bemühen, unser Wiki soweit zu ergänzen, damit niemand sich durch den Support klicken muss.
-Sollte euch ein Eintrag oder Ähnliches fehlen, so meldet euch beim Team, damit wir euren Wunsch besprechen und gegebenfalls umsetzen können. Wir freuen uns immer über rege Userbereitschaft und gehen nach dem Prinzip, ein Forum lebt von seinen Usern und deren Ideen. Wir wollen ja eine gemütliche Gemeinschaft erschaffen. ";
+Falls du Fragen hast oder etwas bestimmtes vermisst, zögere nicht, dich an unser Team zu wenden oder selbst zu erstellen, wenn diese Option freigeschaltet wurde. Wir sind immer bereit, dir weiterzuhelfen und das Lexikon entsprechend zu ergänzen. Denn wir glauben daran, dass ein Forum von der aktiven Beteiligung seiner Mitglieder lebt. Wir freuen uns darauf, mit dir gemeinsam eine lebendige und inspirierende Community aufzubauen. Viel Spaß beim Stöbern und Entdecken!";
 
 // SORTIERUNG
 $l['lexicon_sort_titel'] = "Sortierung";
@@ -80,6 +82,14 @@ $l['lexicon_delete'] = '{1} hat dein Lexikon Eintrag <b>"{3}"</b> abgelehnt!';
 $l['myalerts_setting_lexicon_delete'] = "Benachrichtigung über Ablehnung von eingereichten Lexikoneinträgen?";
 $l['lexicon_accept'] = '{1} hat dein Lexikon Eintrag <b>"{3}"</b> angenommen!';
 $l['myalerts_setting_lexicon_accept'] = "Benachrichtigung über Annahme von eingereichten Lexikoneinträgen?";
+
+// PN Texte
+$l['lexicon_pm_subject_accept'] = 'Dein Lexikon Eintrag wurde angenommen!';
+$l['lexicon_pm_message_accept'] = "Hallo {1},<br>vielen Dank für deine Idee für unser Lexikon. Wir freuen uns über deine Kreativität und haben den <a href=\"lexicon.php?page={3}\">Eintrag <b>{2}</b></a> angenommen. Ab sofort wird er im Lexikon angezeigt.<br><br>Alles Liebe";
+$l['lexicon_pm_message_accept_link'] = "Hallo {1},<br>vielen Dank für deine Idee für unser Lexikon. Wir freuen uns über die <a href=\"{3}\">extra verlinkte Seite <b>{2}</b></a> und haben sie angenommen. Ab sofort kann man diese über das Lexikon erreichen.<br><br>Alles Liebe";
+$l['lexicon_pm_subject_delete'] = 'Dein Lexikon Eintrag wurde abgelehnt!';
+$l['lexicon_pm_message_delete'] = "Hallo {1},<br>vielen Dank für deine Idee für unser Lexikon. Leider müssen wir dir mitteilen, dass wir uns gegen den Eintrag <b>{2}</b> entschieden haben. Solltest du einen expliziten Grund wissen wollen, kannst du dich gerne bei uns melden.<br><br>Alles Liebe";
+$l['lexicon_pm_message_delete_link'] = "Hallo {1},<br>vielen Dank für deine Idee für unser Lexikon. Leider müssen wir dir mitteilen, dass wir uns gegen die extra verlinkte Seite <b>{2}</b> entschieden haben. Solltest du einen expliziten Grund wissen wollen, kannst du dich gerne bei uns melden.<br><br>Alles Liebe";
 
 // ONLINE LOCATION
 $l['lexicon_online_location_main'] = "Sieht sich das <a href=\"lexicon.php\">Lexikon</a> an.";
