@@ -5,15 +5,13 @@ if(!defined("IN_MYBB")){
 }
 
 // HOOKS
-// Teambenachrichtigung auf dem Index
-$plugins->add_hook('global_start', 'lexicon_global');
-// Mod-CP
+$plugins->add_hook('admin_config_settings_change', 'lexicon_settings_change');
+$plugins->add_hook('admin_settings_print_peekers', 'lexicon_settings_peek');
+$plugins->add_hook('global_intermediate', 'lexicon_global');
 $plugins->add_hook('modcp_nav', 'lexicon_modcp_nav');
 $plugins->add_hook("modcp_start", "lexicon_modcp");
-// Online location
 $plugins->add_hook("fetch_wol_activity_end", "lexicon_online_activity");
 $plugins->add_hook("build_friendly_wol_location_end", "lexicon_online_location");
-// MyAlerts
 if(class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
 	$plugins->add_hook("global_start", "lexicon_myalert_alerts");
 }
@@ -22,11 +20,11 @@ if(class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
 function lexicon_info(){
 	return array(
 		"name"		=> "Boardinternes Lexikon",
-		"description"	=> "Pluginbeschreibung",
-		"website"	=> "https://github.com/little-evil-genius/lexicon",
+		"description"	=> "Fügt dem Forum ein eigenes Lexikon hinzu. Dies kann auf der Seite /lexicon.php aufgerufen werden.",
+		"website"	=> "hhttps://github.com/little-evil-genius/Lexikon",
 		"author"	=> "little.evil.genius",
 		"authorsite"	=> "https://storming-gates.de/member.php?action=profile&uid=1712",
-		"version"	=> "1.1",
+		"version"	=> "1.0",
 		"compatibility" => "18*"
 	);
 }
@@ -66,70 +64,87 @@ function lexicon_install(){
     ");
 
 	// EINSTELLUNGEN HINZUFÜGEN
+	$maxdisporder = $db->fetch_field($db->query("SELECT MAX(disporder) FROM ".TABLE_PREFIX."settinggroups"), "MAX(disporder)")+1;
 	$setting_group = array(
 		'name'          => 'lexicon',
 		'title'         => 'Boardinternes Lexikon',
 		'description'   => 'Einstellungen für das Lexikon',
-		'disporder'     => 1,
+		'disporder'     => $maxdisporder,
 		'isdefault'     => 0
 	);
 			
 	$gid = $db->insert_query("settinggroups", $setting_group); 
 			
 	$setting_array = array(
-
-		// GRUPPEN - KATEGORIEN
 		'lexicon_groups_cat' => array(
 			'title' => 'Gruppen für Kategorien',
 			'description' => 'Welche Gruppen haben die Möglichkeit neue Kategorien für das Lexikon hinzufügen?',
 			'optionscode' => 'groupselect',
-			'value' => '4', // Default
+			'value' => 4, // Default
 			'disporder' => 1
 		),
-
-		// GRUPPEN - EINTRÄGE
 		'lexicon_groups_entry' => array(
 			'title' => 'Gruppen für Einträge',
 			'description' => 'Welche Gruppen haben die Möglichkeit neue Einträge für das Lexikon hinzufügen?',
 			'optionscode' => 'groupselect',
-			'value' => '4', // Default
+			'value' => 4, // Default
 			'disporder' => 2
 		),
-
-		// SORTIERUNG - KATEGORIEN
+		'lexicon_user_accepted' => array(
+			'title' => 'Überprüfung von Einträgen',
+			'description' => 'Sollen eingereichte Einträge von Usern vorher überprüft werden und manuell vom Team freigeschaltet werden?',
+			'optionscode' => 'yesno',
+			'value' => 0, // Default
+			'disporder' => 3
+		),
+		'lexicon_user_edit' => array(
+			'title' => 'Bearbeitung von Einträgen',
+			'description' => 'Dürfen User ihre eingereichten Einträge selbstständig bearbeiten? Eine weitere Überprüfung vom oder Benachrichtigung ans Team wird es nicht geben.',
+			'optionscode' => 'yesno',
+			'value' => 0, // Default
+			'disporder' => 4
+		),
+		'lexicon_user_delete' => array(
+			'title' => 'Löschen von Einträgen',
+			'description' => 'Dürfen User ihre eingereichten Einträge selbstständig löschen?',
+			'optionscode' => 'yesno',
+			'value' => 0, // Default
+			'disporder' => 5
+		),
+		'lexicon_user_alert' => array(
+			'title' => 'Benachrichtigungsystem',
+			'description' => 'Wie sollen User darüber in Kenntnis gesetzt werden, dass ihr eingereichter Lexikoneintrag angenommen bzw. abgelehnt wurde?',
+			'optionscode' => 'select\n0=MyAlerts\n1=Private Nachricht',
+			'value' => 0, // Default
+			'disporder' => 6
+		),
 		'lexicon_sort_cat' => array(
 			'title' => 'Sortierung der Kategorien',
 			'description' => 'Sollen die Kategorien alphapetisch nach ihren Namen sortiert werden im Menü oder nach einer manuellen Sortierung?',
 			'optionscode' => 'select\n0=Kategorienamen\n1=manuelle Sortierung',
-			'value' => 2, // Default
-			'disporder' => 3
+			'value' => 0, // Default
+			'disporder' => 7
 		),
-
-		// SORTIERUNG - EINTRÄGE
 		'lexicon_sort_entry' => array(
 			'title' => 'Sortierung der Einträge',
 			'description' => 'Sollen die Einträge alphapetisch nach ihren Linktitel sortiert werden im Menü oder nach einer manuellen Sortierung?',
 			'optionscode' => 'select\n0=Linktitel\n1=manuelle Sortierung',
-			'value' => 2, // Default
-			'disporder' => 4
+			'value' => 0, // Default
+			'disporder' => 8
 		),
-
-		// INHALTSVERZEICHNIS
 		'lexicon_contents' => array(
 			'title' => 'Inhaltsverzeichnis',
 			'description' => 'Soll ein großes Inhaltsverzeichnis erstellt werden? Die Beiträge werden alphabetisch kategorisiert.',
 			'optionscode' => 'yesno',
-			'value' => '1', // Default
-			'disporder' => 5
+			'value' => 1, // Default
+			'disporder' => 9
 		),
-
-		// UNTERBEITRÄGE
 		'lexicon_sub' => array(
 			'title' => 'Untereinträge',
 			'description' => 'Können Einträge auch noch Untereinträge bekommen?',
 			'optionscode' => 'yesno',
-			'value' => '1', // Default
-			'disporder' => 6
+			'value' => 1, // Default
+			'disporder' => 10
 		),
 
 	);
@@ -156,7 +171,7 @@ function lexicon_install(){
 			justify-content: space-between;
 			align-items: flex-start;     
 		}
-		  
+		
 		#lexicon #navigation {
 			width: 20%;
 			display: flex;
@@ -166,7 +181,7 @@ function lexicon_install(){
 			align-items: flex-start;
 			padding-bottom: 10px;    
 		}
-				
+		
 		#lexicon #navigation .navigation-headline {
 			height: 50px;
 			width: 100%;
@@ -180,7 +195,7 @@ function lexicon_install(){
 			padding: 0 5px;
 			box-sizing: border-box;   
 		}
-				
+		
 		#lexicon #navigation .navigation-item {
 			height: 25px;
 			width: 90%;
@@ -191,7 +206,7 @@ function lexicon_install(){
 			box-sizing: border-box;
 			border-bottom: 1px solid #b4b4b4;
 		}
-
+		
 		#lexicon #navigation .navigation-subitem {
 			height: 15px;
 			width: 90%;
@@ -202,18 +217,18 @@ function lexicon_install(){
 			box-sizing: border-box;
 			border-bottom: 1px solid #b4b4b4;
 		}
-
+		
 		#lexicon #navigation .navigation-subitem i {
 			font-size: 11px;
 			padding-top: 1px;
 		}
-				
+		
 		#lexicon .lexicon-entry {
 			width: 80%;
 			box-sizing: border-box;
 			background: #efefef;    
 		}
-				
+		
 		#lexicon .lexicon-entry .entry-headline {
 			height: 50px;
 			width: 100%;
@@ -225,13 +240,20 @@ function lexicon_install(){
 			font-weight: bold;
 			text-transform: uppercase;    
 		}
-				
+		
+		
+		#lexicon .lexicon-entry .entry-subline {
+			text-align: right;
+			padding-right: 10px;
+			margin-top: 5px;
+		}
+		
 		#lexicon .lexicon-entry .entry {
 			padding: 20px 40px;
 			text-align: justify;
 			line-height: 180%;    
 		}
-				
+		
 		#lexicon .lexicon-entry .content-bit {    
 			padding: 0 40px 40px 40px;
 			display: flex;
@@ -239,13 +261,17 @@ function lexicon_install(){
 			justify-content: space-between;
 			gap: 20px;    
 		}
-				
+		
 		#lexicon .lexicon-entry .content-bit .content-letter {
 			width: 45%;     
 		}
-				
+		
 		#lexicon .lexicon-entry .content-bit .content-letter .content-item {
 			margin-bottom: 5px;    
+		}
+		
+		#lexicon .lexicon-entry .content-bit .content-letter .content-item .content-item-cat {
+			font-size:0.7em;
 		}',
 		'cachefile' => $db->escape_string(str_replace('/', '', 'lexicon.css')),
 		'lastmodified' => time()
@@ -522,7 +548,7 @@ function lexicon_install(){
 
     $insert_array = array(
         'title'		=> 'lexicon_contents_entries',
-        'template'	=> $db->escape_string('<div class="content-item">● <a href="{$fulllink}">{$linktitle}</a></div>'),
+        'template'	=> $db->escape_string('<div class="content-item">● <a href="{$fulllink}">{$linktitle}</a> <span class="content-item-cat">({$categoryname})</span></div>'),
         'sid'		=> '-2',
         'version'	=> '',
         'dateline'	=> TIME_NOW
@@ -700,7 +726,8 @@ function lexicon_install(){
 						<div id="lexicon">
 							{$menu}
 							<div class="lexicon-entry">
-								<div class="entry-headline">{$title} {$option_buttons_entry}</div>
+								<div class="entry-headline">{$title}</div>
+								{$option_buttons_entry}
 								<div class="entry">{$entrytext}</div>
 							</div>
 						</div>
@@ -788,9 +815,10 @@ function lexicon_install(){
     $insert_array = array(
         'title'		=> 'lexicon_menu_cat',
         'template'	=> $db->escape_string('<div class="navigation-headline">
-		{$category} {$option_buttons_cat}
-   </div>
-   {$entries}'),
+		{$category} 
+		{$option_buttons_cat}
+	</div>
+	{$entries}'),
         'sid'		=> '-2',
         'version'	=> '',
         'dateline'	=> TIME_NOW
@@ -809,7 +837,7 @@ function lexicon_install(){
 
     $insert_array = array(
         'title'		=> 'lexicon_menu_subentries',
-        'template'	=> $db->escape_string('<div class="navigation-subitem"><i class="fa-solid fa-angle-right"></i>&nbsp;<a href="{$subfulllink}">{$sublinktitle}</a></div>'),
+        'template'	=> $db->escape_string('<div class="navigation-subitem">»&nbsp;<a href="{$subfulllink}">{$sublinktitle}</a></div>'),
         'sid'		=> '-2',
         'version'	=> '',
         'dateline'	=> TIME_NOW
@@ -821,7 +849,7 @@ function lexicon_install(){
         'template'	=> $db->escape_string('<html>
 		<head>
 			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_modcp}</title>
-		{$headerinclude}
+			{$headerinclude}
 		</head>
 		<body>
 			{$header}
@@ -829,24 +857,23 @@ function lexicon_install(){
 				<tr>
 					{$modcp_nav}
 					<td valign="top">
-							<table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
+						<table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
 							<tr>
 								<td class="thead"><strong>{$lang->lexicon_modcp}</strong></td>
 							</tr>
-								<tr>
-									<td class="trow1">
-										
-											{$modcp_control_bit}
-										
-									</td>
-								</tr>
+							<tr>
+								<td class="trow1">
+									{$modcp_control_none}
+									{$modcp_control_bit}
+								</td>
+							</tr>
 						</table>
 					</td>
 				</tr>
 			</table>
-		{$footer}
+			{$footer}
 		</body>
-		</html>'),
+	</html>'),
         'sid'		=> '-2',
         'version'	=> '',
         'dateline'	=> TIME_NOW
@@ -857,30 +884,35 @@ function lexicon_install(){
         'title'		=> 'lexicon_modcp_bit',
         'template'	=> $db->escape_string('<table width="100%">
 		<tr>
-			<td align="center">
-				<div class="tcat"><strong>{$title}</strong>{$subentry}&nbsp;<a href="lexicon.php?edit=entry&eid={$eid}"><i class="fa-solid fa-pen-to-square"></i></a></div>
-				<div class="smalltext"><strong>{$lang->lexicon_modcp_linktitel}</strong> {$linktitle} <strong>{$lang->lexicon_modcp_link}</strong> {$link}</div>	
+			<td class="tcat" align="center" colspan="2">
+				<strong>{$title}</strong>
 			</td>
 		</tr>
 		<tr>
-			<td class="trow1 smalltext"  align="center"><b>{$lang->lexicon_modcp_sendby}</b> {$createdby}</td>
-		</tr>
-		<tr>
-			<td class="thead smalltext"  align="center"><b>{$lang->lexicon_modcp_entrytext}</b></td>
-		</tr>
-		<tr>
-			<td class="trow1">
-				<div style="max-height: 150px; overflow: auto;">{$entrytext}</div>
+			<td class="smalltext" rowspan="2" width="20%">
+				<strong>{$lang->lexicon_modcp_linktitel}</strong> {$linktitle}<br>
+				<strong>{$lang->lexicon_modcp_link}</strong> {$link}<br>
+				<b>{$lang->lexicon_modcp_sendby}</b> {$createdby}
+			</td>
+			<td class="thead smalltext" align="center">
+				{$path}
 			</td>
 		</tr>
 		<tr>
-			<td align="center">
-				<a href="modcp.php?action=lexicon&delete={$eid}" class="button">{$lang->lexicon_modcp_delete_button}</a> 
+			<td>
+				<div style="max-height: 100px; overflow: auto;text-align:justify;padding-right:10px;">
+					{$entrytext}
+				</div>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="2" align="center">
 				<a href="modcp.php?action=lexicon&accept={$eid}" class="button">{$lang->lexicon_modcp_accept_button}</a>
+				<a href="modcp.php?action=lexicon_entryedit&eid={$eid}" class="button">{$lang->lexicon_modcp_edit_button}</a>
+				<a href="modcp.php?action=lexicon&delete={$eid}" class="button">{$lang->lexicon_modcp_delete_button}</a> 
 			</td>
 		</tr>
-	</table>
-	<br /><br />'),
+	</table>'),
         'sid'		=> '-2',
         'version'	=> '',
         'dateline'	=> TIME_NOW
@@ -894,6 +926,140 @@ function lexicon_install(){
 	</tr>'),
         'sid'		=> '-2',
         'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+    $db->insert_query("templates", $insert_array);
+
+    $insert_array = array(
+        'title'		=> 'lexicon_header_link',
+        'template'	=> $db->escape_string('<li><a href="{$mybb->settings[\'bburl\']}/lexicon.php" class="help">{$lang->lexicon_nav_main}</a></li>'),
+        'sid'		=> '-2',
+        'dateline'	=> TIME_NOW
+    );
+    $db->insert_query("templates", $insert_array);
+
+    $insert_array = array(
+        'title'		=> 'lexicon_header_banner',
+        'template'	=> $db->escape_string('<div class="red_alert">{$newentry_notice}</div>'),
+        'sid'		=> '-2',
+        'dateline'	=> TIME_NOW
+    );
+    $db->insert_query("templates", $insert_array);
+
+    $insert_array = array(
+        'title'		=> 'lexicon_entry_option',
+        'template'	=> $db->escape_string('<div class="entry-subline">{$edit_button}  {$delete_button}</div>'),
+        'sid'		=> '-2',
+        'dateline'	=> TIME_NOW
+    );
+    $db->insert_query("templates", $insert_array);
+
+    $insert_array = array(
+        'title'		=> 'lexicon_menu_cat_option',
+        'template'	=> $db->escape_string('<a href="lexicon.php?edit=category&cid={$cid}">E</a> 
+		<a href="lexicon.php?delete_category={$cid}" onClick="return confirm(\'{$lang->lexicon_cat_delet_notice}\');">X</a>'),
+        'sid'		=> '-2',
+        'dateline'	=> TIME_NOW
+    );
+    $db->insert_query("templates", $insert_array);
+
+    $insert_array = array(
+        'title'		=> 'lexicon_modcp_edit',
+        'template'	=> $db->escape_string('<html>
+		<head>
+			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_nav_edit_entry}</title>
+			{$headerinclude}
+		</head>
+		<body>
+			{$header}
+			<table width="100%" border="0" align="center">
+				<tr>
+					{$modcp_nav}
+					<td valign="top">
+						<table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
+							<tr>
+								<td class="thead"><strong>{$lang->lexicon_nav_edit_entry}</strong></td>
+							</tr>
+							<tr>
+								<td class="trow1">
+										<form action="modcp.php?action=do_lexicon_entryedit&eid={$eid}" method="post">
+											<table width="100%">
+												<tbody>			
+													<tr>
+														<td class="trow1">
+															<strong>{$lang->lexicon_add_category_titel}</strong>
+															<div class="smalltext">{$lang->lexicon_add_category_desc}</div>
+														</td>				
+														<td class="trow1">
+															<select name="category" required>
+																{$cat_select}
+															</select> 
+														</td>
+													</tr>
+													
+													{$sub_option}
+		
+													<tr>
+														<td class="trow1">
+															<strong>{$lang->lexicon_add_linktitle_titel}</strong>
+															<div class="smalltext">{$lang->lexicon_add_linktitle_desc}</div>
+														</td>
+														<td class="trow1">
+															<input type="text" name="linktitle" id="linktitle" value="{$linktitle}" class="textbox" required> 
+														</td>
+													</tr>
+													
+													<tr>
+														<td class="trow1">
+															<strong>{$lang->lexicon_add_link_titel}</strong>
+															<div class="smalltext">{$lang->lexicon_add_link_desc}</div>
+														</td>
+														<td class="trow1">
+															<input type="text" name="link" id="link" value="{$link}" class="textbox" required>
+														</td>
+													</tr>
+		
+													<tr>
+														<td class="trow1">
+															<strong>{$lang->lexicon_add_title_titel}</strong>
+															<div class="smalltext">{$lang->lexicon_add_title_desc}</div>
+														</td>
+														<td class="trow1">
+															<input type="text" name="title" id="title" value="{$title}" class="textbox" required>
+														</td>
+													</tr>
+	
+													{$sort_option}
+					
+													<tr>
+														<td class="trow1" colspan="2">
+															<strong>{$lang->lexicon_add_entrytext}</strong>
+														</td>
+													</tr>
+													<tr>
+														<td class="trow1" colspan="2">
+															<textarea class="textarea" name="entrytext" id="entrytext" rows="6" cols="30" style="width: 95%">{$entrytext}</textarea>
+														</td>
+													</tr>
+					
+													<tr>
+														<td colspan="2" align="center">
+															<input type="submit" name="do_lexicon_entryedit" value="{$lang->lexicon_nav_edit_entry}" class="button" />
+														</td>
+													</tr>	
+												</tbody>
+											</table>
+										</form>
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+			</table>
+			{$footer}
+		</body>
+	</html>'),
+        'sid'		=> '-2',
         'dateline'	=> TIME_NOW
     );
     $db->insert_query("templates", $insert_array);
@@ -951,7 +1117,8 @@ function lexicon_activate(){
     require MYBB_ROOT."/inc/adminfunctions_templates.php";
 
 	// VARIABLEN EINFÜGEN
-	find_replace_templatesets('header', '#'.preg_quote('{$bbclosedwarning}').'#', '{$newentry_lexicon} {$bbclosedwarning}');
+	find_replace_templatesets('header', '#'.preg_quote('{$bbclosedwarning}').'#', '{$lexikon_newentry} {$bbclosedwarning}');
+	find_replace_templatesets("header", "#".preg_quote('{$menu_memberlist}')."#i", '{$menu_memberlist}{$menu_lexicon}');
 	find_replace_templatesets('modcp_nav_users', '#'.preg_quote('{$nav_ipsearch}').'#', '{$nav_ipsearch} {$nav_lexicon}');
 	
 	// MyALERTS STUFF
@@ -988,7 +1155,8 @@ function lexicon_deactivate(){
     require MYBB_ROOT."/inc/adminfunctions_templates.php";
 
     // VARIABLEN ENTFERNEN
-	find_replace_templatesets("header", "#".preg_quote('{$newentry_lexicon}')."#i", '', 0);
+	find_replace_templatesets("header", "#".preg_quote('{$lexikon_newentry}')."#i", '', 0);
+	find_replace_templatesets("header", "#".preg_quote('{$menu_lexicon}')."#i", '', 0);
     find_replace_templatesets("modcp_nav_users", "#".preg_quote('{$nav_lexicon}')."#i", '', 0);
 
     // MyALERT STUFF
@@ -1008,21 +1176,58 @@ function lexicon_deactivate(){
 ### THE BIG MAGIC - THE FUNCTIONS ###
 #####################################
 
+// ADMIN-CP PEEKER
+function lexicon_settings_change(){
+    
+    global $db, $mybb, $lexicon_settings_peeker;
+
+    $result = $db->simple_select('settinggroups', 'gid', "name='lexicon'", array("limit" => 1));
+    $group = $db->fetch_array($result);
+    $lexicon_settings_peeker = ($mybb->get_input('gid') == $group['gid']) && ($mybb->request_method != 'post');
+}
+function lexicon_settings_peek(&$peekers){
+
+    global $mybb, $lexicon_settings_peeker;
+
+	if ($lexicon_settings_peeker) {
+        $peekers[] = 'new Peeker($(".setting_lexicon_user_accepted"), $("#row_setting_lexicon_user_edit, #row_setting_lexicon_user_delete"),/1/,true)';
+    }
+
+	if(class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
+		$peekers[] = 'new Peeker($(".setting_lexicon_user_accepted"), $("#row_setting_lexicon_user_alert"),/1/,true)';
+	}
+}
+
 // TEAMHINWEIS
 function lexicon_global() {
 
-    global $db, $cache, $mybb, $templates, $lang, $newentry_lexicon;
+    global $db, $cache, $mybb, $templates, $lang, $lexikon_newentry, $menu_lexicon, $newentry_notice;
 	
 	// SPRACHDATEI
 	$lang->load('lexicon');
 
-    $countentries = $db->fetch_field($db->query("SELECT COUNT(eid) AS entries FROM ".TABLE_PREFIX."lexicon_entries WHERE accepted = '0'"), "entries");
-      
-    if ($mybb->usergroup['canmodcp'] == "1" && $countentries == "1") {   
-        $newentry_lexicon = $lang->sprintf($lang->newentry_lexicon_headerbanner, 'liegt', 'ein', 'neuer', 'Eintrag');
-    } elseif ($mybb->usergroup['canmodcp'] == "1" && $countentries > "1") {
-        $newentry_lexicon = $lang->sprintf($lang->newentry_lexicon_headerbanner, 'liegen', $countentries, 'neue', 'Einträge');
-    }
+	// EINSTELLUNGEN
+	$user_accepted_setting = $mybb->settings['lexicon_user_accepted'];
+
+	// MENU LINK
+	eval("\$menu_lexicon = \"".$templates->get("lexicon_header_link")."\";");
+
+	// TEAMHINWEIS => User einträge müssen überprüft werden
+	if ($user_accepted_setting == 1) {
+		$countentries = $db->num_rows($db->query("SELECT eid FROM ".TABLE_PREFIX."lexicon_entries WHERE accepted = '0'"));
+		if ($mybb->usergroup['canmodcp'] == "1" && $countentries > 0) {
+			if ($countentries == "1") {   
+				$newentry_notice = $lang->sprintf($lang->lexicon_header_banner, 'liegt', 'ein', 'neuer', 'Eintrag');
+			} elseif ($countentries > "1") {
+				$newentry_notice = $lang->sprintf($lang->lexicon_header_banner, 'liegen', $countentries, 'neue', 'Einträge');
+			}
+			eval("\$lexikon_newentry = \"".$templates->get("lexicon_header_banner")."\";");
+		} else {
+			$lexikon_newentry = "";
+		}
+	} else {
+		$lexikon_newentry = "";
+	}
 }
 
 // MOD-CP - NAVIGATION
@@ -1032,20 +1237,36 @@ function lexicon_modcp_nav() {
 
 	// SPRACHDATEI
 	$lang->load('lexicon');
+
+	// EINSTELLUNGEN ZIEHEN
+	$user_accepted_setting = $mybb->settings['lexicon_user_accepted'];
     
-    eval("\$nav_lexicon = \"".$templates->get ("lexicon_modcp_nav")."\";");
+	if ($user_accepted_setting == 1) {
+		eval("\$nav_lexicon = \"".$templates->get ("lexicon_modcp_nav")."\";");
+	}  else {
+		$nav_lexicon = "";
+	}
 }
 
 // MOD-CP - SEITE
 function lexicon_modcp() {
    
-    global $mybb, $templates, $lang, $header, $headerinclude, $footer, $db, $page, $modcp_nav, $text_options, $modcp_control_bit;
+    global $mybb, $templates, $lang, $theme, $header, $headerinclude, $footer, $db, $page, $modcp_nav, $text_options, $modcp_control_bit;
+
+    // DAMIT DIE PN SACHE FUNKTIONIERT
+    require_once MYBB_ROOT."inc/datahandlers/pm.php";
+    $pmhandler = new PMDataHandler();
+
+	// EINSTELLUNGEN ZIEHEN
+	$alertsystem = $mybb->settings['lexicon_user_alert'];
+	$user_accepted_setting = $mybb->settings['lexicon_user_accepted'];
+	$lexicon_sort_entry_setting = $mybb->settings['lexicon_sort_entry'];
+	$lexicon_sub_setting = $mybb->settings['lexicon_sub'];
 
 	// SPRACHDATEI
 	$lang->load('lexicon');
 
 	// PARSER - HTML und CO erlauben
-
 	require_once MYBB_ROOT."inc/class_parser.php";;
 	$parser = new postParser;
 	$text_options = array(
@@ -1058,10 +1279,15 @@ function lexicon_modcp() {
 		"allow_videocode" => 0
 	);
 
+	// Freischalten/Ablehnen
     if($mybb->get_input('action') == 'lexicon') {
 
+		if ($user_accepted_setting != 1) {
+			redirect('modcp.php', $lang->lexicon_redirect_modcp);
+		}
+
         // Add a breadcrumb
-        add_breadcrumb($lang->lexicon_nav_modcp, "modcp.php");
+        add_breadcrumb($lang->nav_modcp, "modcp.php");
         add_breadcrumb($lang->lexicon_modcp, "modcp.php?action=lexicon");
 
 		$modcp_query = $db->query("SELECT * FROM ".TABLE_PREFIX."lexicon_entries
@@ -1069,7 +1295,9 @@ function lexicon_modcp() {
         ORDER BY linktitle ASC
         ");
 
+		$modcp_control_none = $lang->lexicon_modcp_control_none;
         while($modcp = $db->fetch_array($modcp_query)) {
+			$modcp_control_none = "";
    
 			// Leer laufen lassen  
 			$eid = "";
@@ -1079,19 +1307,23 @@ function lexicon_modcp() {
 			$title = "";
 			$entrytext = "";
 			$externallink = "";
+			$cat = "";
 	
 			// Mit Infos füllen   
 			$eid = $modcp['eid'];
 			$cid = $modcp['cid'];
 			$linktitle = $modcp['linktitle'];
-			$title = $modcp['title'];
 			$externallink = $modcp['externallink'];
 
+			$cat = $db->fetch_field($db->simple_select("lexicon_categories", "categoryname", "cid = '".$cid."'"), "categoryname");
+
 			if($externallink != "") {
+				$title = $linktitle;
 				$link = $externallink;
 				$entrytext = $lang->sprintf($lang->lexicon_modcp_externallink, $externallink);
 			} else {
-				$link = $modcp['link'];
+				$title = $modcp['title'];
+				$link = "lexicon.php?page=".$modcp['link'];
 				$entrytext = $parser->parse_message($modcp['entrytext'], $text_options);
 			}
    
@@ -1103,9 +1335,10 @@ function lexicon_modcp() {
 
 			// Unterbeitrag
 			if ($mybb->settings['lexicon_sub'] == 1 AND $modcp['parentlist'] != 0) {
-				$cat = $db->fetch_field($db->simple_select("lexicon_categories", "categoryname", "cid = '{$cid}'"), "categoryname");
-
-				$subentry = "&nbsp;»&nbsp;".$cat;
+				$parentname = $db->fetch_field($db->simple_select("lexicon_entries", "linktitle", "eid = '".$modcp['parentlist']."'"), "linktitle");
+				$path = $cat."&nbsp;»&nbsp;".$parentname."&nbsp;»&nbsp;<b>".$linktitle."</b>";
+			} else {
+				$path = $cat."&nbsp;»&nbsp;<b>".$linktitle."</b>";
 			}
    
             eval("\$modcp_control_bit .= \"".$templates->get("lexicon_modcp_bit")."\";");
@@ -1114,13 +1347,24 @@ function lexicon_modcp() {
         $team_uid = $mybb->user['uid'];
 
 		//Der Eintrag wurde vom Team abgelehnt
-        if($delete = $mybb->input['delete']){
+        if($delete = $mybb->get_input('delete')){
 
-			$titel = $db->fetch_field($db->simple_select("lexicon_entries", "linktitle", "eid = '{$delete}'"), "linktitle");
-			$sendby = $db->fetch_field($db->simple_select("lexicon_entries", "uid", "eid = '{$delete}'"), "uid");
+			$titel = $db->fetch_field($db->simple_select("lexicon_entries", "linktitle", "eid = '".$delete."'"), "linktitle");
+			$sendby = $db->fetch_field($db->simple_select("lexicon_entries", "uid", "eid = '".$delete."'"), "uid");
+			$sendbyName = get_user($sendby)['username'];
+			$externallink = $db->fetch_field($db->simple_select("lexicon_entries", "externallink", "eid = '".$accept."'"), "externallink");
+			
+			// Link
+			if (!empty($externallink)) {
+				$pm_message = $lang->sprintf($lang->lexicon_pm_message_delete_link, $sendbyName, $titel, $externallink);
+			}
+			// eintrag
+			else {
+				$pm_message = $lang->sprintf($lang->lexicon_pm_message_delete, $sendbyName, $titel);
+			}
 
 			// MyALERTS STUFF
-			if(class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
+			if(class_exists('MybbStuff_MyAlerts_AlertTypeManager') AND $alertsystem = 0) {
 				$alertType = MybbStuff_MyAlerts_AlertTypeManager::getInstance()->getByCode('lexicon_delete');
 				if ($alertType != NULL && $alertType->getEnabled()) {
 					$alert = new MybbStuff_MyAlerts_Entity_Alert((int)$sendby, $alertType, (int)$team_uid);
@@ -1131,6 +1375,32 @@ function lexicon_modcp() {
 					]);
 					MybbStuff_MyAlerts_AlertManager::getInstance()->addAlert($alert);
 				}
+			} 
+			// PN STUFF
+			else {
+				$pm_change = array(
+					"subject" => $lang->lexicon_pm_subject_delete,
+					"message" => $pm_message,
+					"fromid" => $team_uid,
+					"toid" => $sendby,
+					"icon" => "",
+					"do" => "",
+					"pmid" => "",
+				);
+		
+				$pm_change['options'] = array(
+					'signature' => '0',
+					'savecopy' => '0',
+					'disablesmilies' => '0',
+					'readreceipt' => '0',
+				);
+				// $pmhandler->admin_override = true;
+				$pmhandler->set_data($pm_change);
+				if (!$pmhandler->validate_pm())
+					return false;
+				else {
+					$pmhandler->insert_pm();
+				}
 			}
 
 			$db->delete_query("lexicon_entries", "eid = '$delete'");
@@ -1138,14 +1408,25 @@ function lexicon_modcp() {
 		}
         
 		//Der Eintag wurde vom Team angenommen        
-		if($accept = $mybb->input['accept']){
+		if($accept = $mybb->get_input('accept')){
 
-			$titel = $db->fetch_field($db->simple_select("lexicon_entries", "linktitle", "eid = '{$accept}'"), "linktitle");
-			$link = $db->fetch_field($db->simple_select("lexicon_entries", "link", "eid = '{$accept}'"), "link");
-			$sendby = $db->fetch_field($db->simple_select("lexicon_entries", "uid", "eid = '{$accept}'"), "uid");
+			$titel = $db->fetch_field($db->simple_select("lexicon_entries", "linktitle", "eid = '".$accept."'"), "linktitle");
+			$link = $db->fetch_field($db->simple_select("lexicon_entries", "link", "eid = '".$accept."'"), "link");
+			$sendby = $db->fetch_field($db->simple_select("lexicon_entries", "uid", "eid = '".$accept."'"), "uid");
+			$sendbyName = get_user($sendby)['username'];
+			$externallink = $db->fetch_field($db->simple_select("lexicon_entries", "externallink", "eid = '".$accept."'"), "externallink");
+			
+			// Link
+			if (!empty($externallink)) {
+				$pm_message = $lang->sprintf($lang->lexicon_pm_message_accept_link, $sendbyName, $titel, $externallink);
+			}
+			// eintrag
+			else {
+				$pm_message = $lang->sprintf($lang->lexicon_pm_message_accept, $sendbyName, $titel, $link);
+			}
 
 			// MyALERTS STUFF
-			if(class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
+			if(class_exists('MybbStuff_MyAlerts_AlertTypeManager') AND $alertsystem = 0) {
 				$alertType = MybbStuff_MyAlerts_AlertTypeManager::getInstance()->getByCode('lexicon_accept');
 				if ($alertType != NULL && $alertType->getEnabled()) {
 					$alert = new MybbStuff_MyAlerts_Entity_Alert((int)$sendby, $alertType, (int)$team_uid);
@@ -1158,17 +1439,158 @@ function lexicon_modcp() {
 					MybbStuff_MyAlerts_AlertManager::getInstance()->addAlert($alert);
 				}
 			}
+			// PN STUFF
+			else {
+				$pm_change = array(
+					"subject" => $lang->lexicon_pm_subject_accept,
+					"message" => $pm_message,
+					"fromid" => $team_uid,
+					"toid" => $sendby,
+					"icon" => "",
+					"do" => "",
+					"pmid" => "",
+				);
+		
+				$pm_change['options'] = array(
+					'signature' => '0',
+					'savecopy' => '0',
+					'disablesmilies' => '0',
+					'readreceipt' => '0',
+				);
+				// $pmhandler->admin_override = true;
+				$pmhandler->set_data($pm_change);
+				if (!$pmhandler->validate_pm())
+					return false;
+				else {
+					$pmhandler->insert_pm();
+				}
+			}
 
 			$db->query("UPDATE ".TABLE_PREFIX."lexicon_entries SET accepted = 1 WHERE eid = '".$accept."'");
 			redirect("modcp.php?action=lexicon", $lang->lexicon_redirect_modcp_accept);
 		}
-
-		 
+ 
         // TEMPLATE FÜR DIE SEITE
         eval("\$page = \"".$templates->get("lexicon_modcp")."\";");
         output_page($page);
         die();
     }
+
+	// Bearbeiten
+	if($mybb->get_input('action') == "lexicon_entryedit") {
+
+		if ($user_accepted_setting != 1) {
+			redirect('modcp.php', $lang->lexicon_redirect_modcp);
+		}
+
+		$eid = $mybb->input['eid'];
+
+        // Add a breadcrumb
+        add_breadcrumb($lang->nav_modcp, "modcp.php");
+        add_breadcrumb($lang->lexicon_modcp, "modcp.php?action=lexicon");
+		add_breadcrumb($lang->lexicon_nav_edit_entry, "modcp.php?action=lexicon_entryedit&eid=".$eid);
+
+		// Eintrag auslesen
+		$entry_query = $db->query("SELECT * FROM ".TABLE_PREFIX."lexicon_entries
+		WHERE eid = '".$eid."'
+		");
+
+		while($edit = $db->fetch_array($entry_query)){
+
+			// Leer laufen lassen
+			$cid = "";
+			$linktitle = "";
+			$link = "";
+			$title = "";
+			$entrytext = "";
+			$sort = "";
+			$externallink = "";
+
+			// Mit Infos füllen
+			$cid = $edit['cid'];
+			$linktitle = $edit['linktitle'];
+			$link = $edit['link'];
+			$title = $edit['title'];
+			$entrytext = $edit['entrytext'];
+			$sort = $edit['sort'];
+			$externallink = $edit['externallink'];
+ 
+			// KATEGORIEN DROPBOX GENERIEREN
+			$categories_query = $db->query("SELECT * FROM ".TABLE_PREFIX."lexicon_categories ORDER by categoryname ASC");
+			$cat_select = "";
+			while($category = $db->fetch_array($categories_query)) {
+    
+				// die bisherige Kategorie als ausgewählt anzeigen lassen
+				if($category['cid'] == $cid) {
+					$checked_cat = "selected";
+				} else {
+					$checked_cat = "";
+				}
+    
+				$cat_select .= "<option value=\"{$category['cid']}\" {$checked_cat}>{$category['categoryname']}</option>";    
+			}
+
+			if($lexicon_sub_setting == 1) { 
+        
+				$entries_query = $db->query("SELECT * FROM ".TABLE_PREFIX."lexicon_entries  
+				WHERE accepted = '1'
+				AND parentlist = '0'
+				ORDER by linktitle ASC
+				");
+   
+				$entries_select = "";    
+				while($entry = $db->fetch_array($entries_query)) {
+
+					// die bisherige Kategorie als ausgewählt anzeigen lassen
+					if($entry['eid'] == $edit['parentlist']) {
+						$checked_sub = "selected";
+					} else {
+						$checked_sub = "";   
+					}
+
+					$entries_select .= "<option value=\"{$entry['eid']}\" {$checked_sub}>{$entry['linktitle']}</option>";   
+				}
+   
+				eval("\$sub_option = \"".$templates->get("lexicon_add_subentry")."\";");
+
+			} else {
+				$sub_option = "";
+			}
+		}
+
+
+		if($lexicon_sort_entry_setting == 1) { 
+			eval("\$sort_option = \"".$templates->get("lexicon_add_sort")."\";");
+		} else {
+			$sort_option = "";
+		}
+    
+		eval("\$page = \"".$templates->get("lexicon_modcp_edit")."\";");
+		output_page($page);
+		die();
+	}
+
+	// Bearbeiten - speichern
+	if($mybb->get_input('action') == "do_lexicon_entryedit") {
+
+		$eid = $mybb->input['eid'];
+ 
+		$edit_entry = [
+			"cid" => $db->escape_string($mybb->get_input('category')),
+			"linktitle" => $db->escape_string($mybb->get_input('linktitle')),
+			"link" => $db->escape_string($mybb->get_input('link')),
+			"externallink" => $db->escape_string($mybb->get_input('externallink')),
+			"title" => $db->escape_string($mybb->get_input('title')),
+			"sort" => $db->escape_string($mybb->get_input('sort')),
+			"parentlist" => $db->escape_string($mybb->get_input('parentlist')),
+			"entrytext" => $db->escape_string($mybb->get_input('entrytext')),
+		];
+
+		$db->update_query("lexicon_entries", $edit_entry, "eid = '".$eid."'");
+ 
+		redirect("modcp.php?action=lexicon", $lang->lexicon_redirect_edit_entry);  
+	}
+	
 }
 
 // ONLINE LOCATION
@@ -1310,7 +1732,7 @@ function lexicon_online_location($plugin_array) {
 		$plugin_array['location_name'] = $lang->sprintf($lang->lexicon_online_location_page, $link, $linktitle);
 	}
 
-return $plugin_array;
+	return $plugin_array;
 }
 
 // MyALERTS STUFF
