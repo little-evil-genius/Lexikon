@@ -34,6 +34,7 @@ $lexicon_contents_setting = $mybb->settings['lexicon_contents'];
 $lexicon_sub_setting = $mybb->settings['lexicon_sub'];
 $user_edit_setting = $mybb->settings['lexicon_user_edit'];
 $user_delete_setting = $mybb->settings['lexicon_user_delete'];
+$user_accepted_setting = $mybb->settings['lexicon_user_accepted'];
 
 // ACCOUNTSWITCHER
 $user_id = $mybb->user['uid'];
@@ -345,7 +346,7 @@ if($mybb->get_input('action') == "add_entry") {
 if($mybb->get_input('action') == "do_entry") {
 
     // Team Einträge werden gleich angenommen      
-    if($mybb->usergroup['canmodcp'] == '1'){
+    if($mybb->usergroup['canmodcp'] == '1' || $user_accepted_setting == 1){
         $accepted = 1;
     } else {
         $accepted = 0;
