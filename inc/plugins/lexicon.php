@@ -1191,10 +1191,17 @@ function lexicon_settings_peek(&$peekers){
 
 	if ($lexicon_settings_peeker) {
         $peekers[] = 'new Peeker($(".setting_lexicon_user_accepted"), $("#row_setting_lexicon_user_edit, #row_setting_lexicon_user_delete"),/1/,true)';
-    }
 
-	if(class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
-		$peekers[] = 'new Peeker($(".setting_lexicon_user_accepted"), $("#row_setting_lexicon_user_alert"),/1/,true)';
+		// Überprüfe ob MybbStuff_MyAlerts_AlertTypeManager existiert
+        if (class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
+            $peekers[] = 'new Peeker($(".setting_lexicon_user_alert"), $("#row_setting_lexicon_user_alert"),/1/,true)';
+        } else {
+            echo '<script type="text/javascript">
+                $(document).ready(function() {
+                    $("#row_setting_lexicon_user_alert").hide();
+                });
+            </script>';
+        }
 	}
 }
 
