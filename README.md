@@ -59,6 +59,6 @@ Es wird automatisch in jedes bestehende und neue Design hinzugefügt. Man sollte
 <img src="https://stormborn.at/plugins/lexikon_inhaltsverzeichnis.png">
 <img src="https://stormborn.at/plugins/lexikon_entry.png">
 <img src="https://stormborn.at/plugins/lexikon_catadd.png">
-<img src="https://stormborn.at/plugins/lexikon_entryaddpng">
+<img src="https://stormborn.at/plugins/lexikon_entryadd.png">
 <img src="https://stormborn.at/plugins/lexikon_search.png">
 <img src="https://stormborn.at/plugins/lexikon_modcp.png">
