@@ -189,7 +189,7 @@ if(is_member($lexicon_groups_entry_setting) AND $count_cat > 0) {
 eval("\$menu = \"".$templates->get("lexicon_menu")."\";");
  
 // DIE HAUPTSEITE VOM LEXIKON - kein Aktion
-if(!$mybb->get_input('action') AND !$mybb->get_input('page') AND !$mybb->get_input('edit') AND !$mybb->get_input('delete_entry') AND !$mybb->get_input('delete_category')) {
+if(!$mybb->get_input('action') AND !$mybb->get_input('search') AND !$mybb->get_input('page') AND !$mybb->get_input('edit') AND !$mybb->get_input('delete_entry') AND !$mybb->get_input('delete_category')) {
     
     eval("\$page = \"".$templates->get("lexicon_mainpage")."\";");
     output_page($page);
@@ -251,6 +251,52 @@ if($mybb->get_input('action') == "contents") {
     }
     
     eval("\$page = \"".$templates->get("lexicon_contents")."\";");
+    output_page($page);
+    die();
+}
+
+// SUCHERGEBNIS
+if($mybb->get_input('search') == "results") {
+
+    $keyword = $db->escape_string($mybb->get_input('keyword'));
+
+    $lexicon_nav_search = $lang->sprintf($lang->lexicon_nav_search, $keyword);
+
+    add_breadcrumb($lexicon_nav_search);
+
+    $search_query = $db->query("SELECT * FROM ".TABLE_PREFIX."lexicon_entries 
+    WHERE (CONCAT(' ', title, ' ') LIKE '% ".$keyword." %' OR CONCAT(' ', entrytext, ' ') LIKE '% ".$keyword." %') 
+    AND accepted = 1 
+    ORDER BY linktitle ASC
+    ");
+
+    $results_bit = "";
+    $results_none = $lang->lexicon_search_none;
+    while($result = $db->fetch_array($search_query)){
+        $results_none = "";
+
+        // Leer laufen lassen
+        $link = "";    
+        $title = "";
+        $cid = "";
+        $categoryname = "";
+        $fulllink = "";
+        $entry = "";
+        $previw_entry = "";
+
+        // Mit Infos füllen
+        $link = $result['link'];    
+        $title = $result['title'];
+        $cid = $result['cid']; 
+        $entry = $result['entrytext']; 
+        $categoryname = $db->fetch_field($db->simple_select("lexicon_categories", "categoryname", "cid = '".$cid."'"), "categoryname");
+        $fulllink = "lexicon.php?page=".$link;
+        $previw_entry = my_substr($entry, 0, 400)." [...]";
+
+        eval("\$results_bit .= \"".$templates->get("lexicon_search_results_bit")."\";");
+    }
+
+    eval("\$page = \"".$templates->get("lexicon_search_results")."\";");
     output_page($page);
     die();
 }
