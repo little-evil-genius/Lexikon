@@ -57,11 +57,15 @@ Es wird automatisch in jedes bestehende und neue Design hinzugefügt. Man sollte
 # Importieren von Daten aus Ales Wiki Plugin:
 1. Lexikon installieren. Wiki von Ales <b>NICHT</b> deinstallieren
 2. phpmyadmin (Datenbank) öffnen und auf den Reiter "SQL" klicken
-3. Query ausführen: <b>ACHTUNG evt. Tableprefix anpassen!</b>
+3. Query für die Kategorien ausführen: <b>ACHTUNG evt. Tableprefix anpassen!</b>
 <blockquote>
 INSERT INTO `mybb_lexicon_categories` (cid, categoryname, sort) SELECT cid,category,sort FROM `mybb_wiki_categories`
+</blockquote>
+4. Query für die Einträge ausführen: <b>ACHTUNG evt. Tableprefix anpassen!</b>
+<blockquote>
 INSERT INTO `mybb_lexicon_entries` (eid, cid, linktitle, link, externallink, title, entrytext, sort, parentlist, uid, accepted) SELECT wid,cid,linktitle,link,"",title,wikitext,sort,0,uid,accepted FROM `mybb_wiki_entries`
 </blockquote>
+
 
 # Demo
 <img src="https://stormborn.at/plugins/lexikon_mainpage.png">
