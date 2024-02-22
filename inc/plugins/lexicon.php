@@ -120,14 +120,14 @@ function lexicon_install(){
 		),
 		'lexicon_sort_cat' => array(
 			'title' => 'Sortierung der Kategorien',
-			'description' => 'Sollen die Kategorien alphapetisch nach ihren Namen sortiert werden im Menü oder nach einer manuellen Sortierung?',
+			'description' => 'Sollen die Kategorien im Menü alphabetisch nach ihren Namen sortiert werden, oder nach einer manuellen Sortierung?'			,
 			'optionscode' => 'select\n0=Kategorienamen\n1=manuelle Sortierung',
 			'value' => 0, // Default
 			'disporder' => 7
 		),
 		'lexicon_sort_entry' => array(
 			'title' => 'Sortierung der Einträge',
-			'description' => 'Sollen die Einträge alphapetisch nach ihren Linktitel sortiert werden im Menü oder nach einer manuellen Sortierung?',
+			'description' => 'Sollen die Einträge im Menü alphabetisch nach ihren Linktitel sortiert werden oder nach einer manuellen Sortierung?',
 			'optionscode' => 'select\n0=Linktitel\n1=manuelle Sortierung',
 			'value' => 0, // Default
 			'disporder' => 8
@@ -183,7 +183,7 @@ function lexicon_install(){
 		}
 		
 		#lexicon #navigation .navigation-headline {
-			height: 50px;
+			min-height: 50px;
 			width: 100%;
 			background: #b8b8b8;
 			display: flex;
@@ -197,10 +197,10 @@ function lexicon_install(){
 		}
 		
 		#lexicon #navigation .navigation-item {
-			height: 25px;
+			min-height: 25px;
 			width: 90%;
 			margin: 0 auto;
-			padding: 10px 20px;
+			padding: 5px 20px;
 			display: flex;
 			align-items: center;
 			box-sizing: border-box;
@@ -208,7 +208,7 @@ function lexicon_install(){
 		}
 		
 		#lexicon #navigation .navigation-subitem {
-			height: 15px;
+			min-height: 15px;
 			width: 90%;
 			margin: 0 auto;
 			padding: 0 20px 5px 20px;
@@ -221,6 +221,20 @@ function lexicon_install(){
 		#lexicon #navigation .navigation-subitem i {
 			font-size: 11px;
 			padding-top: 1px;
+		}
+		
+		#lexicon #navigation .navigation-search {
+			width: 90%;
+			margin: 0 auto;
+			padding: 10px 0;
+			display: flex;
+			align-items: center;
+			box-sizing: border-box;
+			border-bottom: 1px solid #b4b4b4;
+		}
+		
+		#lexicon #navigation .navigation-search input.textbox {
+			width: 68%;
 		}
 		
 		#lexicon .lexicon-entry {
@@ -272,6 +286,10 @@ function lexicon_install(){
 		
 		#lexicon .lexicon-entry .content-bit .content-letter .content-item .content-item-cat {
 			font-size:0.7em;
+		}
+		
+		#lexicon .lexicon-entry .lexicon_search_results {
+			margin-bottom: 10px;
 		}',
 		'cachefile' => $db->escape_string(str_replace('/', '', 'lexicon.css')),
 		'lastmodified' => time()
@@ -298,11 +316,11 @@ function lexicon_install(){
     $insert_array = array(
         'title'		=> 'lexicon_add_category',
         'template'	=> $db->escape_string('<html>
-		<head>
+		  <head>
 			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_nav_add_category}</title>
 			{$headerinclude}
-		</head>
-		<body>
+		 </head>
+		 <body>
 			{$header}
 			<table width="100%" cellspacing="5" cellpadding="0">
 				<tr>
@@ -344,7 +362,7 @@ function lexicon_install(){
 				</tr>
 			</table>
 			{$footer}
-		</body>	
+		 </body>	
 	</html>'),
         'sid'		=> '-2',
         'version'	=> '',
@@ -779,6 +797,13 @@ function lexicon_install(){
 		<div class="navigation-headline">
 			<a href="lexicon.php">{$lang->lexicon_nav_main}</a>
 		</div>  
+		<div class="navigation-search">
+			<form action="lexicon.php" method="get">
+				<input type="hidden" name="search" value="results">
+				<input type="text" class="textbox" name="keyword" id="keyword" placeholder="{$lang->lexicon_search_input}" value="">
+				<button type="submit">Suchen</button>
+			</form>
+		</div>
 		{$menu_contents} 
 		{$add_cat}
 		{$add_entry}
@@ -837,7 +862,7 @@ function lexicon_install(){
 
     $insert_array = array(
         'title'		=> 'lexicon_menu_subentries',
-        'template'	=> $db->escape_string('<div class="navigation-subitem">»&nbsp;<a href="{$subfulllink}">{$sublinktitle}</a></div>'),
+        'template'	=> $db->escape_string('<div class="navigation-subitem"><i>»&nbsp;</i> <a href="{$subfulllink}">{$sublinktitle}</a></div>'),
         'sid'		=> '-2',
         'version'	=> '',
         'dateline'	=> TIME_NOW
@@ -958,6 +983,48 @@ function lexicon_install(){
         'title'		=> 'lexicon_menu_cat_option',
         'template'	=> $db->escape_string('<a href="lexicon.php?edit=category&cid={$cid}">E</a> 
 		<a href="lexicon.php?delete_category={$cid}" onClick="return confirm(\'{$lang->lexicon_cat_delet_notice}\');">X</a>'),
+        'sid'		=> '-2',
+        'dateline'	=> TIME_NOW
+    );
+    $db->insert_query("templates", $insert_array);
+
+    $insert_array = array(
+        'title'		=> 'lexicon_search_results',
+        'template'	=> $db->escape_string('<html>
+		<head>
+			<title>{$mybb->settings[\'bbname\']} - {$lexicon_nav_search}</title>
+			{$headerinclude}</head>
+		<body>
+			{$header}
+			<table width="100%" cellspacing="5" cellpadding="0">
+				<tr>
+					<td valign="top">
+						<div id="lexicon">
+							{$menu}
+							<div class="lexicon-entry">
+								<div class="entry-headline">{$lexicon_nav_search}</div>
+								<div class="entry">{$results_none}{$results_bit}</div>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</table>
+			{$footer}
+		</body>
+	</html>'),
+        'sid'		=> '-2',
+        'dateline'	=> TIME_NOW
+    );
+    $db->insert_query("templates", $insert_array);
+
+    $insert_array = array(
+        'title'		=> 'lexicon_search_results_bit',
+        'template'	=> $db->escape_string('<div class="lexicon_search_results">
+		<div class="lexicon_search_results_headline"><strong><a href="{$fulllink}">{$title}</a></strong> » {$categoryname}</div>
+		<div class="lexicon_search_results_previw">
+			{$previw_entry}
+		</div>
+	</div>'),
         'sid'		=> '-2',
         'dateline'	=> TIME_NOW
     );
@@ -1674,6 +1741,17 @@ function lexicon_online_activity($user_activity) {
 		if ($parameter == 'page') {
 			$side_name = "page=".$value;
 		}
+
+		// search Seiten
+		// lexicon.php?search=results&keyword=XXX
+		if ($parameter == 'search') {
+
+			$value_split = explode("&", $value);
+			// Keyword
+			$kayword = $split_value[2];
+
+			$side_name = "search=".$kayword;
+		}
 	} 
 	// HAUPTSEITE
     else {
@@ -1737,6 +1815,12 @@ function lexicon_online_location($plugin_array) {
 		$link = $split_name[1];
 		$linktitle = $db->fetch_field($db->simple_select("lexicon_entries", "linktitle", "link = '".$link."'"), "linktitle");
 		$plugin_array['location_name'] = $lang->sprintf($lang->lexicon_online_location_page, $link, $linktitle);
+	}
+
+	// DIE EINTRÄGE
+	if($sidename == "lexicon_search") {
+		$keyword = $split_name[1];
+		$plugin_array['location_name'] = $lang->sprintf($lang->lexicon_online_location_search, $keyword);
 	}
 
 	return $plugin_array;
