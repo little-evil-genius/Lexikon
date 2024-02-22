@@ -55,10 +55,10 @@ hinzugefügte Tabelle:
 Es wird automatisch in jedes bestehende und neue Design hinzugefügt. Man sollte es einfach einmal abspeichern - auch im Default. Sonst kann es passieren, dass es bei einem Update von MyBB entfernt wird.
 
 # Demo
-<img src="https://stormborn.at/plugins/lexikon_catadd.png">
-<img src="https://stormborn.at/plugins/lexikon_entry.png">
-<img src="https://stormborn.at/plugins/lexikon_entryaddpng">
-<img src="https://stormborn.at/plugins/lexikon_inhaltsverzeichnis.png">
 <img src="https://stormborn.at/plugins/lexikon_mainpage.png">
-<img src="https://stormborn.at/plugins/lexikon_modcp.png">
+<img src="https://stormborn.at/plugins/lexikon_inhaltsverzeichnis.png">
+<img src="https://stormborn.at/plugins/lexikon_entry.png">
+<img src="https://stormborn.at/plugins/lexikon_catadd.png">
+<img src="https://stormborn.at/plugins/lexikon_entryaddpng">
 <img src="https://stormborn.at/plugins/lexikon_search.png">
+<img src="https://stormborn.at/plugins/lexikon_modcp.png">
