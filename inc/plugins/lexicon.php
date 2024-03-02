@@ -169,53 +169,92 @@ function lexicon_install(){
 			display: flex;
 			gap: 20px;
 			justify-content: space-between;
-			align-items: flex-start;     
+			align-items: flex-start;    
 		}
 		
 		#lexicon #navigation {
 			width: 20%;
 			display: flex;
 			flex-direction: column;
-			gap: 10px;
-			background: #efefef;
 			align-items: flex-start;
-			padding-bottom: 10px;    
+			background: #fff;
+			border: 1px solid #ccc;
+			padding: 1px;
+			-moz-border-radius: 7px;
+			-webkit-border-radius: 7px;
+			border-radius: 7px;   
 		}
 		
 		#lexicon #navigation .navigation-headline {
 			min-height: 50px;
 			width: 100%;
-			background: #b8b8b8;
 			display: flex;
 			justify-content: center;
 			align-items: center;
 			font-weight: bold;
 			text-transform: uppercase;
-			text-align: center; 
+			text-align: center;
 			padding: 0 5px;
-			box-sizing: border-box;   
+			box-sizing: border-box;
+			background: #0066a2 url(../../../images/thead.png) top left repeat-x;
+			color: #ffffff;
+		}
+		
+		#lexicon #navigation .navigation-headline:first-child {
+			-moz-border-radius-topleft: 6px;
+			-moz-border-radius-topright: 6px;
+			-webkit-border-top-left-radius: 6px;
+			-webkit-border-top-right-radius: 6px;
+			border-top-left-radius: 6px;
+			border-top-right-radius: 6px; 
+		}
+		
+		#lexicon #navigation .navigation-headline:first-child a:link,
+		#lexicon #navigation .navigation-headline:first-child a:visited,
+		#lexicon #navigation .navigation-headline:first-child a:active,
+		#lexicon #navigation .navigation-headline:first-child a:hover {
+			margin-left: 0;
+		}
+		
+		#lexicon #navigation .navigation-headline a:link,
+		#lexicon #navigation .navigation-headline a:visited,
+		#lexicon #navigation .navigation-headline a:active,
+		#lexicon #navigation .navigation-headline a:hover {
+			color: #ffffff;
+			margin-left: 5px;
 		}
 		
 		#lexicon #navigation .navigation-item {
 			min-height: 25px;
-			width: 90%;
+			width: 100%;
 			margin: 0 auto;
 			padding: 5px 20px;
 			display: flex;
 			align-items: center;
 			box-sizing: border-box;
-			border-bottom: 1px solid #b4b4b4;
+			border-bottom: 1px solid #ddd;
+			background: #f5f5f5;
+		}
+		
+		#lexicon #navigation .navigation-item:last-child {
+			-moz-border-radius-bottomright: 6px;
+			-webkit-border-bottom-right-radius: 6px;
+			border-bottom-right-radius: 6px;
+			-moz-border-radius-bottomleft: 6px;
+			-webkit-border-bottom-left-radius: 6px;
+			border-bottom-left-radius: 6px;
 		}
 		
 		#lexicon #navigation .navigation-subitem {
-			min-height: 15px;
-			width: 90%;
+			min-height: 25px;
+			width: 100%;
 			margin: 0 auto;
-			padding: 0 20px 5px 20px;
+			padding: 0 20px 0px 20px;
 			display: flex;
 			align-items: center;
 			box-sizing: border-box;
-			border-bottom: 1px solid #b4b4b4;
+			border-bottom: 1px solid #ddd;
+			background: #f5f5f5;
 		}
 		
 		#lexicon #navigation .navigation-subitem i {
@@ -223,14 +262,21 @@ function lexicon_install(){
 			padding-top: 1px;
 		}
 		
+		#lexicon #navigation .navigation-externallink-option {
+			width: 100%;
+			text-align: right;
+		}
+		
 		#lexicon #navigation .navigation-search {
-			width: 90%;
+			width: 100%;
 			margin: 0 auto;
 			padding: 10px 0;
 			display: flex;
 			align-items: center;
 			box-sizing: border-box;
-			border-bottom: 1px solid #b4b4b4;
+			border-bottom: 1px solid #ddd;
+			background: #f5f5f5;
+			justify-content: center;
 		}
 		
 		#lexicon #navigation .navigation-search input.textbox {
@@ -240,40 +286,76 @@ function lexicon_install(){
 		#lexicon .lexicon-entry {
 			width: 80%;
 			box-sizing: border-box;
-			background: #efefef;    
+			background: #fff;
+			border: 1px solid #ccc;
+			padding: 1px;
+			-moz-border-radius: 7px;
+			-webkit-border-radius: 7px;
+			border-radius: 7px;    
 		}
 		
 		#lexicon .lexicon-entry .entry-headline {
 			height: 50px;
 			width: 100%;
-			background: #b8b8b8;
 			font-size: 30px;
 			display: flex;
 			justify-content: center;
 			align-items: center;
 			font-weight: bold;
-			text-transform: uppercase;    
+			text-transform: uppercase;
+			background: #0066a2 url(../../../images/thead.png) top left repeat-x;
+			color: #ffffff;
+			-moz-border-radius-topleft: 6px;
+			-moz-border-radius-topright: 6px;
+			-webkit-border-top-left-radius: 6px;
+			-webkit-border-top-right-radius: 6px;
+			border-top-left-radius: 6px;
+			border-top-right-radius: 6px; 
 		}
 		
 		
 		#lexicon .lexicon-entry .entry-subline {
 			text-align: right;
 			padding-right: 10px;
-			margin-top: 5px;
+			padding-top: 5px;
+			background: #f5f5f5;
 		}
 		
 		#lexicon .lexicon-entry .entry {
+			background: #f5f5f5;
 			padding: 20px 40px;
 			text-align: justify;
-			line-height: 180%;    
+			line-height: 180%;   
+			-moz-border-radius-bottomright: 6px;
+			-webkit-border-bottom-right-radius: 6px;
+			border-bottom-right-radius: 6px;
+			-moz-border-radius-bottomleft: 6px;
+			-webkit-border-bottom-left-radius: 6px;
+			border-bottom-left-radius: 6px; 
 		}
 		
-		#lexicon .lexicon-entry .content-bit {    
+		#lexicon .lexicon-entry .entry.content {
+			-moz-border-radius-bottomright: 0;
+			-webkit-border-bottom-right-radius: 0;
+			border-bottom-right-radius: 0;
+			-moz-border-radius-bottomleft: 0;
+			-webkit-border-bottom-left-radius: 0;
+			border-bottom-left-radius: 0;
+		}
+		
+		#lexicon .lexicon-entry .content-bit {
 			padding: 0 40px 40px 40px;
 			display: flex;
 			flex-wrap: wrap;
 			justify-content: space-between;
-			gap: 20px;    
+			gap: 20px;
+			background:#f5f5f5;
+			-moz-border-radius-bottomright: 6px;
+			-webkit-border-bottom-right-radius: 6px;
+			border-bottom-right-radius: 6px;
+			-moz-border-radius-bottomleft: 6px;
+			-webkit-border-bottom-left-radius: 6px;
+			border-bottom-left-radius: 6px; 
 		}
 		
 		#lexicon .lexicon-entry .content-bit .content-letter {
@@ -534,7 +616,7 @@ function lexicon_install(){
 							{$menu}
 							<div class="lexicon-entry">
 								<div class="entry-headline">{$lang->lexicon_contents}</div>
-								<div class="entry">{$lang->lexicon_contents_desc}</div>
+								<div class="entry content">{$lang->lexicon_contents_desc}</div>
 								<div class="content-bit">
 									{$contents_bit}
 								</div>
@@ -731,6 +813,85 @@ function lexicon_install(){
     $db->insert_query("templates", $insert_array);
 
     $insert_array = array(
+        'title'		=> 'lexicon_edit_externallink',
+        'template'	=> $db->escape_string('<html>
+		<head>
+			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_nav_edit_externallink}</title>
+			{$headerinclude}
+		</head>
+		<body>
+			{$header}
+			<table width="100%" cellspacing="5" cellpadding="0">
+				<tr>
+					<td valign="top">
+						<div id="lexicon">
+							{$menu}
+							<div class="lexicon-entry">
+								<div class="entry-headline">{$lang->lexicon_nav_edit_externallink}</div>
+								<div class="entry">
+									<form  action="lexicon.php?edit=do_externallink&eid={$eid}" method="post">
+										<table width="100%">
+											<tbody>			
+												<tr>
+													<td class="trow1">
+														<strong>{$lang->lexicon_add_category_titel}</strong>
+														<div class="smalltext">{$lang->lexicon_add_category_desc}</div>
+													</td>				
+													<td class="trow1">
+														<select name="category" required>
+															{$cat_select}
+														</select> 
+													</td>
+												</tr>
+													
+													{$sub_option}
+													
+													<tr>
+														<td class="trow1">
+															<strong>{$lang->lexicon_add_linktitle_titel}</strong>
+															<div class="smalltext">{$lang->lexicon_add_linktitle_desc}</div>
+														</td>
+														<td class="trow1">
+															<input type="text" name="linktitle" id="linktitle" value="{$linktitle}" class="textbox" required> 
+														</td>
+													</tr>
+													
+													<tr>
+														<td class="trow1">
+															<strong>{$lang->lexicon_add_externallink_titel}</strong>
+															<div class="smalltext">{$lang->lexicon_add_externallink_desc}</div>
+														</td>
+														<td class="trow1">
+															<input type="text" name="externallink" id="externallink" value="{$externallink}" class="textbox" required>
+														</td>
+													</tr>
+	
+												{$sort_option}
+	
+												<tr>
+													<td colspan="2" align="center">
+														<input type="submit" name="do_externallink" value="{$lang->lexicon_nav_edit_externallink}" class="button" />
+													</td>
+												</tr>	
+											</tbody>
+										</table>
+									</form>
+								</div>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</table>
+			{$footer}
+		</body>
+	</html>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+    $db->insert_query("templates", $insert_array);
+
+    $insert_array = array(
         'title'		=> 'lexicon_entry',
         'template'	=> $db->escape_string('<html>
 		<head>
@@ -800,7 +961,7 @@ function lexicon_install(){
 		<div class="navigation-search">
 			<form action="lexicon.php" method="get">
 				<input type="hidden" name="search" value="results">
-				<input type="text" class="textbox" name="keyword" id="keyword" placeholder="{$lang->lexicon_search_input}" value="">
+				<input type="text" class="textbox" name="keyword" id="keyword" placeholder="Suchbegriff eingeben" value="">
 				<button type="submit">Suchen</button>
 			</form>
 		</div>
@@ -852,8 +1013,23 @@ function lexicon_install(){
 
     $insert_array = array(
         'title'		=> 'lexicon_menu_entries',
-        'template'	=> $db->escape_string('<div class="navigation-item"><a href="{$fulllink}">{$linktitle}</a></div>
-		{$subentries}'),
+        'template'	=> $db->escape_string('<div class="navigation-item">
+		<a href="{$fulllink}">{$linktitle}</a> 
+		{$option_menu_externallink}
+	</div>	
+	{$subentries}'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+    $db->insert_query("templates", $insert_array);
+
+    $insert_array = array(
+        'title'		=> 'lexicon_menu_externallink_option',
+        'template'	=> $db->escape_string('<div class="navigation-externallink-option">
+		<a href="lexicon.php?edit=externallink&eid={$eid}">E</a> 
+	   <a href="lexicon.php?delete_externallink={$eid}" onClick="return confirm(\'{$lang->lexicon_externallink_delet_notice}\');">X</a>
+   </div>'),
         'sid'		=> '-2',
         'version'	=> '',
         'dateline'	=> TIME_NOW
@@ -862,7 +1038,11 @@ function lexicon_install(){
 
     $insert_array = array(
         'title'		=> 'lexicon_menu_subentries',
-        'template'	=> $db->escape_string('<div class="navigation-subitem"><i>»&nbsp;</i> <a href="{$subfulllink}">{$sublinktitle}</a></div>'),
+        'template'	=> $db->escape_string('<div class="navigation-subitem">
+		<i>»&nbsp;</i> 
+		<a href="{$subfulllink}">{$sublinktitle}</a>
+		{$option_menu_externallink}
+	</div>'),
         'sid'		=> '-2',
         'version'	=> '',
         'dateline'	=> TIME_NOW
