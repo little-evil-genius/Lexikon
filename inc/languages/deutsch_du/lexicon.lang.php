@@ -3,6 +3,7 @@
 $l['lexicon_nav_main'] = "Lexikon";
 $l['lexicon_cat_delet_notice'] = "Sobald du diese Kategorie löscht, löscht du auch alle Einträge innerhalb dieser. Wirklich löschen?";
 $l['lexicon_entry_delet_notice'] = "Sobald du diesen Eintrag löscht, löscht du auch alle Einträge welche diesem untergordnet sind. Wirklich löschen?";
+$l['lexicon_externallink_delet_notice'] = "Sobald du diesen externen Link löscht, löscht du auch alle Einträge welche diesem untergordnet sind. Wirklich löschen?";
 $l['lexicon_button_edit'] = "Bearbeiten";
 $l['lexicon_button_delete'] = "Löschen";
 
@@ -23,8 +24,10 @@ $l['lexicon_redirect_edit_error_cat'] = "Du hast keine Berechtigung, eine Katego
 $l['lexicon_redirect_edit_error_entry'] = "Du hast keine Berechtigung, ein Eintrag vom Lexikon zu bearbeiten! Du wirst nun auf die Hauptseite vom Lexikon zurückgeleitet!";
 $l['lexicon_redirect_edit_cat'] = "Die Kategorie wurde erfolgreich bearbeitet! Du wirst nun auf die Hauptseite vom Lexikon zurückgeleitet!";
 $l['lexicon_redirect_edit_entry'] = "Der Eintrag wurde erfolgreich bearbeitet! Du wirst nun auf die Hauptseite vom Lexikon zurückgeleitet!";
+$l['lexicon_redirect_edit_externallink'] = "Der externe Link wurde erfolgreich bearbeitet! Du wirst nun auf die Hauptseite vom Lexikon zurückgeleitet!";
 $l['lexicon_redirect_delete_cat'] = "Die Kategorie und alle Einträge innherhalb dieser wurden erfolgreich gelöscht! Du wirst nun auf die Hauptseite vom Lexikon zurückgeleitet!";
 $l['lexicon_redirect_delete_entry'] = "Der Eintrag wurde erfolgreich gelöscht! Du wirst nun auf die Hauptseite vom Lexikon zurückgeleitet!";
+$l['lexicon_redirect_delete_externallink'] = "Der externe Link wurde erfolgreich gelöscht! Du wirst nun auf die Hauptseite vom Lexikon zurückgeleitet!";
 
 // MODCP
 $l['lexicon_modcp_nav'] = "Neue Lexikon-Einträge";
@@ -52,6 +55,7 @@ $l['lexicon_add_categoryname_desc'] = "Wie lautet der Name der Kategorie?<br>Kat
 // HINZUFÜGEN & BEARBEITEN EINTRAG
 $l['lexicon_nav_add_entry'] = "Eintrag hinzufügen";
 $l['lexicon_nav_edit_entry'] = "Eintrag bearbeiten";
+$l['lexicon_nav_edit_externallink'] = "Externen Link bearbeiten";
 $l['lexicon_add_category_titel'] = "Kategorie";
 $l['lexicon_add_category_desc'] = "In welche Kategorie soll dieser Eintrag eingeordnetet werden?";
 $l['lexicon_add_linktitle_titel'] = "Linktitel";
@@ -106,5 +110,6 @@ $l['lexicon_online_location_add_category'] = "Fügt dem <a href=\"lexicon.php\">
 $l['lexicon_online_location_add_entry'] = "Fügt dem <a href=\"lexicon.php\">Lexikon</a> ein neuen Eintrag hinzu.";
 $l['lexicon_online_location_edit_category'] = "Bearbeitet gerade die <a href=\"lexicon.php\">Lexikonkategprie</a> <b>{1}</b>.";
 $l['lexicon_online_location_edit_entry'] = "Bearbeitet gerade den <a href=\"lexicon.php\">Lexikoneintrag</a> <b>{1}</b>.";
+$l['lexicon_online_location_edit_externallink'] = "Bearbeitet gerade den externen Link <b>{1}</b> im <a href=\"lexicon.php\">Lexikon</a>.";
 $l['lexicon_online_location_page'] = "Sieht sich den <a href=\"lexicon.php?page={1}\">Lexikoneintrag <b>{2}</b></a> an.";
 $l['lexicon_online_location_search'] = "Durchsucht das Lexikon nach dem Begriff <a href=\"lexicon.php?search=results&keyword={1}\">{1}</a>.";
