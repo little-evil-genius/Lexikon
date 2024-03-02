@@ -125,19 +125,28 @@ while($cat = $db->fetch_array($query_menu)){
             while($subentry = $db->fetch_array($subentries_query)){
 
                 // Leer laufen lassen
+                $eid = "";
                 $sublink = "";   
                 $sublinktitle = "";
                 $subexternallink = "";
+                $option_menu_subentries = "";
     
                 // Mit Infos füllen
+                $eid = $subentry['eid'];   
                 $sublink = $subentry['link'];       
                 $sublinktitle = $subentry['linktitle'];
                 $subexternallink = $subentry['externallink'];
 
                 if($subexternallink != "") {
                     $subfulllink = $subexternallink;
+                    if ($mybb->usergroup['canmodcp'] == '1') {
+                        eval("\$option_menu_externallink = \"".$templates->get("lexicon_menu_externallink_option")."\";");
+                    } else {
+                        $option_menu_externallink = "";
+                    }
                 } else {
                     $subfulllink = "lexicon.php?page=".$sublink;
+                    $option_menu_externallink = "";
                 }
 
                 eval("\$subentries .= \"".$templates->get("lexicon_menu_subentries")."\";");
@@ -146,8 +155,14 @@ while($cat = $db->fetch_array($query_menu)){
 
         if($externallink != "") {
             $fulllink = $externallink;
+            if ($mybb->usergroup['canmodcp'] == '1') {
+                eval("\$option_menu_externallink = \"".$templates->get("lexicon_menu_externallink_option")."\";");
+            } else {
+                $option_menu_externallink = "";
+            }
         } else {
             $fulllink = "lexicon.php?page=".$link;
+            $option_menu_externallink = "";
         }
         
         eval("\$entries .= \"".$templates->get("lexicon_menu_entries")."\";");
@@ -189,7 +204,7 @@ if(is_member($lexicon_groups_entry_setting) AND $count_cat > 0) {
 eval("\$menu = \"".$templates->get("lexicon_menu")."\";");
  
 // DIE HAUPTSEITE VOM LEXIKON - kein Aktion
-if(!$mybb->get_input('action') AND !$mybb->get_input('search') AND !$mybb->get_input('page') AND !$mybb->get_input('edit') AND !$mybb->get_input('delete_entry') AND !$mybb->get_input('delete_category')) {
+if(!$mybb->get_input('action') AND !$mybb->get_input('search') AND !$mybb->get_input('page') AND !$mybb->get_input('edit') AND !$mybb->get_input('delete_entry') AND !$mybb->get_input('delete_category') AND !$mybb->get_input('delete_externallink')) {
     
     eval("\$page = \"".$templates->get("lexicon_mainpage")."\";");
     output_page($page);
@@ -265,7 +280,7 @@ if($mybb->get_input('search') == "results") {
     add_breadcrumb($lexicon_nav_search);
 
     $search_query = $db->query("SELECT * FROM ".TABLE_PREFIX."lexicon_entries 
-    WHERE (CONCAT(' ', title, ' ') LIKE '% ".$keyword." %' OR CONCAT(' ', entrytext, ' ') LIKE '% ".$keyword." %') 
+    WHERE (title REGEXP '[[:<:]]".$keyword."[[:>:]]' OR entrytext REGEXP '[[:<:]]".$keyword."[[:>:]]')
     AND accepted = 1 
     ORDER BY linktitle ASC
     ");
@@ -392,7 +407,7 @@ if($mybb->get_input('action') == "add_entry") {
 if($mybb->get_input('action') == "do_entry") {
 
     // Team Einträge werden gleich angenommen      
-    if($mybb->usergroup['canmodcp'] == '1' || $user_accepted_setting == 1){
+    if($mybb->usergroup['canmodcp'] == '1' || $user_accepted_setting == 0){
         $accepted = 1;
     } else {
         $accepted = 0;
@@ -659,6 +674,111 @@ if($mybb->get_input('edit') == "do_entry") {
     redirect("lexicon.php", $lang->lexicon_redirect_edit_entry);  
 }
 
+// EXTERNENLINK BEARBEITEN - SEITE
+if($mybb->get_input('edit') == "externallink") {
+
+    $eid = $mybb->get_input('eid');
+
+    add_breadcrumb($lang->lexicon_nav_edit_externallink);
+
+    if($mybb->usergroup['canmodcp'] != '1') { 
+        redirect('lexicon.php', $lang->lexicon_redirect_edit_error_entry);
+        return;
+    }
+
+    // Eintrag auslesen
+    $externallink_query = $db->query("SELECT * FROM ".TABLE_PREFIX."lexicon_entries
+    WHERE eid = '".$eid."'
+    ");
+
+    while($edit = $db->fetch_array($externallink_query)){
+
+        // Leer laufen lassen
+        $cid = "";
+        $linktitle = "";
+        $externallink = "";
+        $sort = "";
+
+        // Mit Infos füllen
+        $cid = $edit['cid'];
+        $linktitle = $edit['linktitle'];
+        $externallink = $edit['externallink'];
+        $sort = $edit['sort'];
+ 
+        // KATEGORIEN DROPBOX GENERIEREN
+        $categories_query = $db->query("SELECT * FROM ".TABLE_PREFIX."lexicon_categories ORDER by categoryname ASC");
+
+        $cat_select = "";
+        while($category = $db->fetch_array($categories_query)) {
+    
+            // die bisherige Kategorie als ausgewählt anzeigen lassen
+            if($category['cid'] == $cid) {
+                $checked_cat = "selected";
+            } else {
+                $checked_cat = "";
+            }
+    
+            $cat_select .= "<option value=\"{$category['cid']}\" {$checked_cat}>{$category['categoryname']}</option>";    
+        }
+
+        if($lexicon_sub_setting == 1) { 
+        
+            $entries_query = $db->query("SELECT * FROM ".TABLE_PREFIX."lexicon_entries  
+            WHERE accepted = '1'
+            AND parentlist = '0'
+            ORDER by linktitle ASC
+            ");
+   
+            $entries_select = "";    
+            while($entry = $db->fetch_array($entries_query)) {
+
+                // die bisherige Kategorie als ausgewählt anzeigen lassen
+                if($entry['eid'] == $edit['parentlist']) {
+                    $checked_sub = "selected";
+                } else {
+                    $checked_sub = "";   
+                }
+
+                $entries_select .= "<option value=\"{$entry['eid']}\" {$checked_sub}>{$entry['linktitle']}</option>";   
+            }
+   
+            eval("\$sub_option = \"".$templates->get("lexicon_add_subentry")."\";");
+
+        } else {
+            $sub_option = "";
+        }
+
+    }
+
+    if($lexicon_sort_entry_setting == 1) { 
+        eval("\$sort_option = \"".$templates->get("lexicon_add_sort")."\";");
+    } else {
+        $sort_option = "";
+    }
+    
+    eval("\$page = \"".$templates->get("lexicon_edit_externallink")."\";");
+    output_page($page);
+    die();
+}
+
+// EXTERNENLINK BEARBEITEN - SPEICHERN
+if($mybb->get_input('edit') == "do_externallink") {
+
+    $eid = $mybb->get_input('eid');
+ 
+    $edit_externallink = [
+       "cid" => (int)$mybb->get_input('category'),
+       "linktitle" => $db->escape_string($mybb->get_input('linktitle')),
+       "externallink" => $db->escape_string($mybb->get_input('externallink')),
+       "sort" => (int)$mybb->get_input('sort'),
+       "parentlist" => (int)$mybb->get_input('parentlist'),
+    ];
+
+    $db->update_query("lexicon_entries", $edit_externallink, "eid = '".$eid."'");
+ 
+    redirect("lexicon.php", $lang->lexicon_redirect_edit_externallink);  
+}
+
 // KATEGORIE LÖSCHEN
 $delete_cat = $mybb->get_input('delete_category');
 if($delete_cat) {
@@ -681,6 +801,18 @@ if($delete_entry) {
     $db->delete_query("lexicon_entries", "parentlist = '".$delete_entry."'");
 
     redirect("lexicon.php", $lang->lexicon_redirect_delete_entry);
+}
+
+// EXTERNENLINK LÖSCHEN
+$delete_externallink = $mybb->get_input('delete_externallink');
+if($delete_externallink) {
+
+    // in Eintrag löschen
+    $db->delete_query("lexicon_entries", "eid = '".$delete_externallink."'");
+    // in Untereinträge von diesem Eintrag löschen
+    $db->delete_query("lexicon_entries", "parentlist = '".$delete_externallink."'");
+
+    redirect("lexicon.php", $lang->lexicon_redirect_delete_externallink);
 }
 
 // ACCOUNTSWITCHER HILFSFUNKTION
