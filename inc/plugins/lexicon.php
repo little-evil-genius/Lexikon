@@ -1516,13 +1516,15 @@ function lexicon_modcp() {
 			// PN STUFF
 			else {
 				$pm_change = array(
-					"subject" => $lang->lexicon_pm_subject_accept,
-					"message" => $pm_message,
-					"fromid" => $team_uid,
-					"toid" => $sendby,
-					"icon" => "",
-					"do" => "",
 					"pmid" => "",
+					"uid" => $team_uid,
+					"toid" => $sendby,
+					"fromid" => $team_uid,
+					"subject" => $lang->lexicon_pm_subject_accept,
+					"icon" => "",
+					"message" => $pm_message,
+					"do" => "",
+					"ipaddress" => "",
 				);
 		
 				$pm_change['options'] = array(
@@ -1530,6 +1532,7 @@ function lexicon_modcp() {
 					'savecopy' => '0',
 					'disablesmilies' => '0',
 					'readreceipt' => '0',
+					"pmid" => "",
 				);
 				// $pmhandler->admin_override = true;
 				$pmhandler->set_data($pm_change);
@@ -1734,6 +1737,12 @@ function lexicon_online_activity($user_activity) {
 			if($edit_value == "entry"){
 				$side_name = "edit_entry=".$value_id;
 			}
+			
+			// EXTERNEN LINK BEARBEITEN
+			// lexicon.php?edit=externallink&eid=XXX
+			if($edit_value == "externallink"){
+				$side_name = "edit_externallink=".$value_id;
+			}
 
 		}
 
@@ -1808,6 +1817,13 @@ function lexicon_online_location($plugin_array) {
 		$eid = $split_name[1];
 		$linktitle = $db->fetch_field($db->simple_select("lexicon_entries", "linktitle", "eid = '".$eid."'"), "linktitle");
 		$plugin_array['location_name'] = $lang->sprintf($lang->lexicon_online_location_edit_entry, $linktitle);
+	}
+
+	// EXTERNEN LINK BEARBEITEN
+	if($sidename == "lexicon_edit_externallink") {
+		$eid = $split_name[1];
+		$linktitle = $db->fetch_field($db->simple_select("lexicon_entries", "linktitle", "eid = '".$eid."'"), "linktitle");
+		$plugin_array['location_name'] = $lang->sprintf($lang->lexicon_online_location_edit_externallink, $linktitle);
 	}
 
 	// DIE EINTRÄGE
