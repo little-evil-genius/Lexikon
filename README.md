@@ -68,10 +68,10 @@ INSERT INTO `mybb_lexicon_entries` (eid, cid, linktitle, link, externallink, tit
 
 
 # Demo
-<img src="https://stormborn.at/plugins/lexikon_mainpage.png">
-<img src="https://stormborn.at/plugins/lexikon_inhaltsverzeichnis.png">
-<img src="https://stormborn.at/plugins/lexikon_entry.png">
-<img src="https://stormborn.at/plugins/lexikon_catadd.png">
-<img src="https://stormborn.at/plugins/lexikon_entryadd.png">
-<img src="https://stormborn.at/plugins/lexikon_search.png">
-<img src="https://stormborn.at/plugins/lexikon_modcp.png">
+<img src="https://stormborn.at/plugins/lexikon_mainpage2.png">
+<img src="https://stormborn.at/plugins/lexikon_inhaltsverzeichnis2.png">
+<img src="https://stormborn.at/plugins/lexikon_entry2.png">
+<img src="https://stormborn.at/plugins/lexikon_catadd2.png">
+<img src="https://stormborn.at/plugins/lexikon_entryadd2.png">
+<img src="https://stormborn.at/plugins/lexikon_search2.png">
+<img src="https://stormborn.at/plugins/lexikon_modcp2.png">
