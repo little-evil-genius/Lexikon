@@ -24,12 +24,13 @@ hinzugefügte Tabelle:
 - lexicon_add_category
 - lexicon_add_entry
 - lexicon_add_sort
-- lexicon_add_subentry
+- lexicon_add_subentry	
 - lexicon_contents
 - lexicon_contents_bit
 - lexicon_contents_entries
 - lexicon_edit_category
 - lexicon_edit_entry
+- lexicon_edit_externallink
 - lexicon_entry
 - lexicon_entry_option
 - lexicon_header_banner
@@ -41,11 +42,14 @@ hinzugefügte Tabelle:
 - lexicon_menu_cat
 - lexicon_menu_cat_option
 - lexicon_menu_entries
+- lexicon_menu_externallink_option
 - lexicon_menu_subentries
 - lexicon_modcp
 - lexicon_modcp_bit
 - lexicon_modcp_edit
 - lexicon_modcp_nav
+- lexicon_search_results
+- lexicon_search_results_bit
 
 # Neue Variable
 - header: {$lexikon_newentry} und {$menu_lexicon}
