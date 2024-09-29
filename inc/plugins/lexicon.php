@@ -24,7 +24,7 @@ function lexicon_info(){
 		"website"	=> "hhttps://github.com/little-evil-genius/Lexikon",
 		"author"	=> "little.evil.genius",
 		"authorsite"	=> "https://storming-gates.de/member.php?action=profile&uid=1712",
-		"version"	=> "1.0",
+		"version"	=> "1.1",
 		"compatibility" => "18*"
 	);
 }
@@ -2032,7 +2032,7 @@ function lexicon_myalert_alerts() {
     /**
 	 * Alert formatter for my custom alert type.
 	 */
-	class MybbStuff_MyAlerts_Formatter_DeleteFormatter extends MybbStuff_MyAlerts_Formatter_AbstractFormatter
+	class MybbStuff_MyAlerts_Formatter_lexiconDeleteFormatter extends MybbStuff_MyAlerts_Formatter_AbstractFormatter
 	{
 	    /**
 	     * Format an alert into it's output string to be used in both the main alerts listing page and the popup.
@@ -2091,7 +2091,7 @@ function lexicon_myalert_alerts() {
 		}
 
 		$formatterManager->registerFormatter(
-				new MybbStuff_MyAlerts_Formatter_DeleteFormatter($mybb, $lang, 'lexicon_delete')
+				new MybbStuff_MyAlerts_Formatter_lexiconDeleteFormatter($mybb, $lang, 'lexicon_delete')
 		);
     }
 
@@ -2099,7 +2099,7 @@ function lexicon_myalert_alerts() {
 	/**
 	* Alert formatter for my custom alert type.
 	*/
-	class MybbStuff_MyAlerts_Formatter_AcceptetFormatter extends MybbStuff_MyAlerts_Formatter_AbstractFormatter
+	class MybbStuff_MyAlerts_Formatter_lexiconAcceptetFormatter extends MybbStuff_MyAlerts_Formatter_AbstractFormatter
 	{
 	    /**
 	     * Format an alert into it's output string to be used in both the main alerts listing page and the popup.
@@ -2159,7 +2159,7 @@ function lexicon_myalert_alerts() {
 		}
 
 		$formatterManager->registerFormatter(
-				new MybbStuff_MyAlerts_Formatter_AcceptetFormatter($mybb, $lang, 'lexicon_accept')
+				new MybbStuff_MyAlerts_Formatter_lexiconAcceptetFormatter($mybb, $lang, 'lexicon_accept')
 		);
     }
 
