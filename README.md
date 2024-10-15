@@ -3,6 +3,9 @@ Das Plugin erweitert das Board um ein eigenes Lexikon. Das Lexikon bietet eine p
 <br>
 Das Lexikon beinhaltet auf Wunsch ein Inhaltsverzeichnis oder besser gesagt ein Glossar. Es handelt sich dabei um eine alphabetische Übersicht aller Einträge. Kategorien und Einträge können entweder nach dem angezeigten Titel im Menü oder nach einer manuellen Sortierung geordnet werden. Manche Einträge sind zu umfangreich, um sie in einen bestehenden Eintrag einzufügen, weswegen es auch möglich ist, Einträge als Untereinträge zu kennzeichnen. Man kann in das Lexikon nicht nur klassische Einträge einfügen, sondern das Menü um ein externen Link erweitern. Ein Beispiel wäre, wenn das Board eine Seite besitzt, wo User das Abschlussjahr ihrer Charaktere berechnen können, dann kann ohne groß zu suchen innerhalb der Einträge solche Links in das Menü eingefügt werden.
 
+# Vorrausetzung
+- Das ACP Modul <a href="https://github.com/little-evil-genius/rpgstuff_modul" target="_blank">RPG Stuff</a> <b>muss</b> vorhanden sein.
+
 # Datenbank-Änderungen
 hinzugefügte Tabelle:
 - PRÄFIX_lexicon_categories
@@ -268,17 +271,19 @@ Es wird automatisch in jedes bestehende und neue Design hinzugefügt. Man sollte
 }</blockquote>
 
 # Importieren von Daten aus Ales Wiki Plugin:
-1. Lexikon installieren. Wiki von Ales <b>NICHT</b> deinstallieren
-2. phpmyadmin (Datenbank) öffnen und auf den Reiter "SQL" klicken
-3. Query für die Kategorien ausführen: <b>ACHTUNG evt. Tableprefix anpassen!</b>
-<blockquote>
-INSERT INTO `mybb_lexicon_categories` (cid, categoryname, sort) SELECT cid,category,sort FROM `mybb_wiki_categories`
-</blockquote>
-4. Query für die Einträge ausführen: <b>ACHTUNG evt. Tableprefix anpassen!</b>
-<blockquote>
-INSERT INTO `mybb_lexicon_entries` (eid, cid, linktitle, link, externallink, title, entrytext, sort, parentlist, uid, accepted) SELECT wid,cid,linktitle,link,"",title,wikitext,sort,0,uid,accepted FROM `mybb_wiki_entries`
-</blockquote>
-
+Falls ihr zuvor das Wiki-Plugin von Ales verwendet habt, bietet dieses Plugin eine einfache Möglichkeit, bestehende Kategorien und die Einträge zu übertragen.
+Um die Übertragung durchzuführen, gehe wie folgt vor:<br>
+<br>
+1. <b>Navigieren zum Übertragungsseite:</b><br>
+Im ACP findest du im Modul "RPG Erweiterungen" den Menüpunkt "Wiki-Daten übertragen". Klicke auf diesen Punkt, um die Übertragungsseite zu öffnen.<br>
+<br>
+2. <b>Übertragungsprozess starten:</b><br>
+Einfach auf den Button "Daten übertragen" klicken und schon startet der Übertragungsprozess. Sobald die Übertragung abgeschlossen ist, erhältst du eine Bestätigung. Bei Problemen immer im SG-Supportthema melden!<br>
+<br>
+3. <b>Wiki-Plugin deinstallieren:</b><br>Nachdem die Übertragung erfolgreich durchgeführt wurde (überprüfe es vorher einmal), kannst du das Wiki-Plugin gefahrlos deinstallieren, da alle Daten jetzt in das neue Plugin übertragen wurden.<br>
+<br>
+<b>Wichtiger Hinweis:</b><br>
+Die Übertragung der Inplayszenen muss erfolgen, <b>bevor neue Szenen erstellt werden</b>!
 
 # Demo
 <img src="https://stormborn.at/plugins/lexikon_mainpage2.png">
