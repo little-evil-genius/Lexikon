@@ -240,10 +240,7 @@ function lexicon_admin_rpgstuff_menu_updates(&$sub_menu) {
 
 	global $mybb, $lang, $db;
 
-    if (!$db->table_exists("wiki_categories") AND !$db->table_exists("wiki_entries")) {
-        
-        // $lang->load('inplayscenes');
-    
+    if ($db->table_exists("wiki_categories") AND $db->table_exists("wiki_entries")) {
         $sub_menu[] = [
             "id" => "lexicon_transfer",
             "title" => "Wiki-Daten übertragen",
