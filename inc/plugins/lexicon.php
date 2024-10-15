@@ -276,7 +276,7 @@ function lexicon_admin_manage() {
 				log_admin_action("Wiki-Daten übertragen");
         
 				flash_message("Alle Kategorien und die entsprechenden Einträge wurden erfolgreich übertragen. Du kannst nun das Wiki-Plugin entfernen.", 'success');
-				admin_redirect("index.php?module=rpgstuff-inplayscenes_updates");
+				admin_redirect("index.php?module=rpgstuff-lexicon_transfer");
 			}
 			
 			// Show errors
