@@ -270,8 +270,7 @@ function lexicon_admin_manage() {
             if ($mybb->request_method == 'post') {
 				
 				$db->query("INSERT INTO ".TABLE_PREFIX."lexicon_categories (cid, categoryname, sort) SELECT cid, category, sort FROM ".TABLE_PREFIX."wiki_categories");
-				$db->query("INSERT INTO ".TABLE_PREFIX."lexicon_entries (eid, cid, linktitle, link, externallink, title, entrytext, sort, parentlist, uid, accepted) SELECT wid, cid, linktitle, link, '', title, wikitext, sort, 0, uid, accepted FROM ".TABLE_PREFIX."wiki_entries");
-			
+				$db->query("INSERT INTO ".TABLE_PREFIX."lexicon_entries (eid, cid, linktitle, link, externallink, title, entrytext, sort, parentlist, uid, accepted) SELECT wid, cid, linktitle, link, '', title, wikitext, sort, '0', uid, accepted FROM ".TABLE_PREFIX."wiki_entries");
                                 
 				// Log admin action                   
 				log_admin_action("Wiki-Daten übertragen");
