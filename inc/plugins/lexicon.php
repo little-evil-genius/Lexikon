@@ -7,6 +7,12 @@ if(!defined("IN_MYBB")){
 // HOOKS
 $plugins->add_hook('admin_config_settings_change', 'lexicon_settings_change');
 $plugins->add_hook('admin_settings_print_peekers', 'lexicon_settings_peek');
+$plugins->add_hook("admin_rpgstuff_action_handler", "lexicon_admin_rpgstuff_action_handler");
+$plugins->add_hook("admin_rpgstuff_permissions", "lexicon_admin_rpgstuff_permissions");
+$plugins->add_hook("admin_rpgstuff_menu_updates", "lexicon_admin_rpgstuff_menu_updates");
+$plugins->add_hook("admin_load", "lexicon_admin_manage");
+$plugins->add_hook('admin_rpgstuff_update_stylesheet', 'lexicon_admin_update_stylesheet');
+$plugins->add_hook('admin_rpgstuff_update_plugin', 'lexicon_admin_update_plugin');
 $plugins->add_hook('global_intermediate', 'lexicon_global');
 $plugins->add_hook('modcp_nav', 'lexicon_modcp_nav');
 $plugins->add_hook("modcp_start", "lexicon_modcp");
@@ -24,7 +30,7 @@ function lexicon_info(){
 		"website"	=> "hhttps://github.com/little-evil-genius/Lexikon",
 		"author"	=> "little.evil.genius",
 		"authorsite"	=> "https://storming-gates.de/member.php?action=profile&uid=1712",
-		"version"	=> "1.1",
+		"version"	=> "1.2",
 		"compatibility" => "18*"
 	);
 }
@@ -34,356 +40,40 @@ function lexicon_install(){
     
     global $db, $cache, $mybb;
 
-    // DATENBANKEN HINZUFÜGEN
-    $db->query("CREATE TABLE ".TABLE_PREFIX."lexicon_categories(
-        `cid` int(10) NOT NULL AUTO_INCREMENT,
-        `categoryname` varchar(500) CHARACTER SET utf8 NOT NULL,
-		`sort` INT(10) DEFAULT '0' NOT NULL,
-        PRIMARY KEY(`cid`),
-        KEY `cid` (`cid`)
-        )
-        ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci AUTO_INCREMENT=1
-    ");
+    // RPG Stuff Modul muss vorhanden sein
+    if (!file_exists(MYBB_ADMIN_DIR."/modules/rpgstuff/module_meta.php")) {
+		flash_message("Das ACP Modul <a href=\"https://github.com/little-evil-genius/rpgstuff_modul\" target=\"_blank\">\"RPG Stuff\"</a> muss vorhanden sein!", 'error');
+		admin_redirect('index.php?module=config-plugins');
+	}
 
-    $db->query("CREATE TABLE ".TABLE_PREFIX."lexicon_entries(
-        `eid` int(10) NOT NULL auto_increment, 
-        `cid` int(11) NOT NULL,  
-        `linktitle` varchar(255) CHARACTER SET utf8 NOT NULL,  
-        `link` varchar(255) CHARACTER SET utf8 NOT NULL,  
-        `externallink` varchar(500) CHARACTER SET utf8 NOT NULL,  
-        `title` varchar(255) CHARACTER SET utf8 NOT NULL,
-        `entrytext` longtext CHARACTER SET utf8 NOT NULL,
-		`sort` INT(10) DEFAULT '0' NOT NULL,
-        `parentlist` varchar(255) CHARACTER SET utf8 DEFAULT '0' NOT NULL,
-        `uid` int(10) NOT NULL,
-        `accepted` int(10) DEFAULT '0' NOT NULL,
-        PRIMARY KEY(`eid`),
-        KEY `eid` (`eid`)
-        )
-        ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci AUTO_INCREMENT=1
-    ");
+	// DATENBANKTABELLEN UND FELDER
+    lexicon_database();
 
 	// EINSTELLUNGEN HINZUFÜGEN
-	$maxdisporder = $db->fetch_field($db->query("SELECT MAX(disporder) FROM ".TABLE_PREFIX."settinggroups"), "MAX(disporder)")+1;
+	$maxdisporder = $db->fetch_field($db->query("SELECT MAX(disporder) FROM ".TABLE_PREFIX."settinggroups"), "MAX(disporder)");
 	$setting_group = array(
 		'name'          => 'lexicon',
 		'title'         => 'Boardinternes Lexikon',
 		'description'   => 'Einstellungen für das Lexikon',
-		'disporder'     => $maxdisporder,
+		'disporder'     => $maxdisporder+1,
 		'isdefault'     => 0
-	);
-			
-	$gid = $db->insert_query("settinggroups", $setting_group); 
-			
-	$setting_array = array(
-		'lexicon_groups_cat' => array(
-			'title' => 'Gruppen für Kategorien',
-			'description' => 'Welche Gruppen haben die Möglichkeit neue Kategorien für das Lexikon hinzufügen?',
-			'optionscode' => 'groupselect',
-			'value' => 4, // Default
-			'disporder' => 1
-		),
-		'lexicon_groups_entry' => array(
-			'title' => 'Gruppen für Einträge',
-			'description' => 'Welche Gruppen haben die Möglichkeit neue Einträge für das Lexikon hinzufügen?',
-			'optionscode' => 'groupselect',
-			'value' => 4, // Default
-			'disporder' => 2
-		),
-		'lexicon_user_accepted' => array(
-			'title' => 'Überprüfung von Einträgen',
-			'description' => 'Sollen eingereichte Einträge von Usern vorher überprüft werden und manuell vom Team freigeschaltet werden?',
-			'optionscode' => 'yesno',
-			'value' => 0, // Default
-			'disporder' => 3
-		),
-		'lexicon_user_edit' => array(
-			'title' => 'Bearbeitung von Einträgen',
-			'description' => 'Dürfen User ihre eingereichten Einträge selbstständig bearbeiten? Eine weitere Überprüfung vom oder Benachrichtigung ans Team wird es nicht geben.',
-			'optionscode' => 'yesno',
-			'value' => 0, // Default
-			'disporder' => 4
-		),
-		'lexicon_user_delete' => array(
-			'title' => 'Löschen von Einträgen',
-			'description' => 'Dürfen User ihre eingereichten Einträge selbstständig löschen?',
-			'optionscode' => 'yesno',
-			'value' => 0, // Default
-			'disporder' => 5
-		),
-		'lexicon_user_alert' => array(
-			'title' => 'Benachrichtigungsystem',
-			'description' => 'Wie sollen User darüber in Kenntnis gesetzt werden, dass ihr eingereichter Lexikoneintrag angenommen bzw. abgelehnt wurde?',
-			'optionscode' => 'select\n0=MyAlerts\n1=Private Nachricht',
-			'value' => 0, // Default
-			'disporder' => 6
-		),
-		'lexicon_sort_cat' => array(
-			'title' => 'Sortierung der Kategorien',
-			'description' => 'Sollen die Kategorien im Menü alphabetisch nach ihren Namen sortiert werden, oder nach einer manuellen Sortierung?'			,
-			'optionscode' => 'select\n0=Kategorienamen\n1=manuelle Sortierung',
-			'value' => 0, // Default
-			'disporder' => 7
-		),
-		'lexicon_sort_entry' => array(
-			'title' => 'Sortierung der Einträge',
-			'description' => 'Sollen die Einträge im Menü alphabetisch nach ihren Linktitel sortiert werden oder nach einer manuellen Sortierung?',
-			'optionscode' => 'select\n0=Linktitel\n1=manuelle Sortierung',
-			'value' => 0, // Default
-			'disporder' => 8
-		),
-		'lexicon_contents' => array(
-			'title' => 'Inhaltsverzeichnis',
-			'description' => 'Soll ein großes Inhaltsverzeichnis erstellt werden? Die Beiträge werden alphabetisch kategorisiert.',
-			'optionscode' => 'yesno',
-			'value' => 1, // Default
-			'disporder' => 9
-		),
-		'lexicon_sub' => array(
-			'title' => 'Untereinträge',
-			'description' => 'Können Einträge auch noch Untereinträge bekommen?',
-			'optionscode' => 'yesno',
-			'value' => 1, // Default
-			'disporder' => 10
-		),
-
-	);
-			
-	foreach($setting_array as $name => $setting)
-	{
-		$setting['name'] = $name;
-		$setting['gid']  = $gid;
-		$db->insert_query('settings', $setting);
-	}
+	);	
+	$db->insert_query("settinggroups", $setting_group); 
+		
+    lexicon_settings();
 	rebuild_settings();
 
-	require_once MYBB_ADMIN_DIR."inc/functions_themes.php";
-
     // STYLESHEET HINZUFÜGEN
-    $css = array(
-		'name' => 'lexicon.css',
-		'tid' => 1,
-		'attachedto' => '',
-		"stylesheet" =>	'#lexicon {
-			width: 100%;
-			display: flex;
-			gap: 20px;
-			justify-content: space-between;
-			align-items: flex-start;    
-		}
-		
-		#lexicon #navigation {
-			width: 20%;
-			display: flex;
-			flex-direction: column;
-			align-items: flex-start;
-			background: #fff;
-			border: 1px solid #ccc;
-			padding: 1px;
-			-moz-border-radius: 7px;
-			-webkit-border-radius: 7px;
-			border-radius: 7px;   
-		}
-		
-		#lexicon #navigation .navigation-headline {
-			min-height: 50px;
-			width: 100%;
-			display: flex;
-			justify-content: center;
-			align-items: center;
-			font-weight: bold;
-			text-transform: uppercase;
-			text-align: center;
-			padding: 0 5px;
-			box-sizing: border-box;
-			background: #0066a2 url(../../../images/thead.png) top left repeat-x;
-			color: #ffffff;
-		}
-		
-		#lexicon #navigation .navigation-headline:first-child {
-			-moz-border-radius-topleft: 6px;
-			-moz-border-radius-topright: 6px;
-			-webkit-border-top-left-radius: 6px;
-			-webkit-border-top-right-radius: 6px;
-			border-top-left-radius: 6px;
-			border-top-right-radius: 6px; 
-		}
-		
-		#lexicon #navigation .navigation-headline:first-child a:link,
-		#lexicon #navigation .navigation-headline:first-child a:visited,
-		#lexicon #navigation .navigation-headline:first-child a:active,
-		#lexicon #navigation .navigation-headline:first-child a:hover {
-			margin-left: 0;
-		}
-		
-		#lexicon #navigation .navigation-headline a:link,
-		#lexicon #navigation .navigation-headline a:visited,
-		#lexicon #navigation .navigation-headline a:active,
-		#lexicon #navigation .navigation-headline a:hover {
-			color: #ffffff;
-			margin-left: 5px;
-		}
-		
-		#lexicon #navigation .navigation-item {
-			min-height: 25px;
-			width: 100%;
-			margin: 0 auto;
-			padding: 5px 20px;
-			display: flex;
-			align-items: center;
-			box-sizing: border-box;
-			border-bottom: 1px solid #ddd;
-			background: #f5f5f5;
-		}
-		
-		#lexicon #navigation .navigation-item:last-child {
-			-moz-border-radius-bottomright: 6px;
-			-webkit-border-bottom-right-radius: 6px;
-			border-bottom-right-radius: 6px;
-			-moz-border-radius-bottomleft: 6px;
-			-webkit-border-bottom-left-radius: 6px;
-			border-bottom-left-radius: 6px;
-		}
-		
-		#lexicon #navigation .navigation-subitem {
-			min-height: 25px;
-			width: 100%;
-			margin: 0 auto;
-			padding: 0 20px 0px 20px;
-			display: flex;
-			align-items: center;
-			box-sizing: border-box;
-			border-bottom: 1px solid #ddd;
-			background: #f5f5f5;
-		}
-		
-		#lexicon #navigation .navigation-subitem i {
-			font-size: 11px;
-			padding-top: 1px;
-		}
-		
-		#lexicon #navigation .navigation-externallink-option {
-			width: 100%;
-			text-align: right;
-		}
-		
-		#lexicon #navigation .navigation-search {
-			width: 100%;
-			margin: 0 auto;
-			padding: 10px 0;
-			display: flex;
-			align-items: center;
-			box-sizing: border-box;
-			border-bottom: 1px solid #ddd;
-			background: #f5f5f5;
-			justify-content: center;
-		}
-		
-		#lexicon #navigation .navigation-search input.textbox {
-			width: 68%;
-		}
-		
-		#lexicon .lexicon-entry {
-			width: 80%;
-			box-sizing: border-box;
-			background: #fff;
-			border: 1px solid #ccc;
-			padding: 1px;
-			-moz-border-radius: 7px;
-			-webkit-border-radius: 7px;
-			border-radius: 7px;    
-		}
-		
-		#lexicon .lexicon-entry .entry-headline {
-			height: 50px;
-			width: 100%;
-			font-size: 30px;
-			display: flex;
-			justify-content: center;
-			align-items: center;
-			font-weight: bold;
-			text-transform: uppercase;
-			background: #0066a2 url(../../../images/thead.png) top left repeat-x;
-			color: #ffffff;
-			-moz-border-radius-topleft: 6px;
-			-moz-border-radius-topright: 6px;
-			-webkit-border-top-left-radius: 6px;
-			-webkit-border-top-right-radius: 6px;
-			border-top-left-radius: 6px;
-			border-top-right-radius: 6px; 
-		}
-		
-		
-		#lexicon .lexicon-entry .entry-subline {
-			text-align: right;
-			padding-right: 10px;
-			padding-top: 5px;
-			background: #f5f5f5;
-		}
-		
-		#lexicon .lexicon-entry .entry {
-			background: #f5f5f5;
-			padding: 20px 40px;
-			text-align: justify;
-			line-height: 180%;   
-			-moz-border-radius-bottomright: 6px;
-			-webkit-border-bottom-right-radius: 6px;
-			border-bottom-right-radius: 6px;
-			-moz-border-radius-bottomleft: 6px;
-			-webkit-border-bottom-left-radius: 6px;
-			border-bottom-left-radius: 6px; 
-		}
-		
-		#lexicon .lexicon-entry .entry.content {
-			-moz-border-radius-bottomright: 0;
-			-webkit-border-bottom-right-radius: 0;
-			border-bottom-right-radius: 0;
-			-moz-border-radius-bottomleft: 0;
-			-webkit-border-bottom-left-radius: 0;
-			border-bottom-left-radius: 0;
-		}
-		
-		#lexicon .lexicon-entry .content-bit {
-			padding: 0 40px 40px 40px;
-			display: flex;
-			flex-wrap: wrap;
-			justify-content: space-between;
-			gap: 20px;
-			background:#f5f5f5;
-			-moz-border-radius-bottomright: 6px;
-			-webkit-border-bottom-right-radius: 6px;
-			border-bottom-right-radius: 6px;
-			-moz-border-radius-bottomleft: 6px;
-			-webkit-border-bottom-left-radius: 6px;
-			border-bottom-left-radius: 6px; 
-		}
-		
-		#lexicon .lexicon-entry .content-bit .content-letter {
-			width: 45%;     
-		}
-		
-		#lexicon .lexicon-entry .content-bit .content-letter .content-item {
-			margin-bottom: 5px;    
-		}
-		
-		#lexicon .lexicon-entry .content-bit .content-letter .content-item .content-item-cat {
-			font-size:0.7em;
-		}
-		
-		#lexicon .lexicon-entry .lexicon_search_results {
-			margin-bottom: 10px;
-		}',
-		'cachefile' => $db->escape_string(str_replace('/', '', 'lexicon.css')),
-		'lastmodified' => time()
-	);
-    
+	require_once MYBB_ADMIN_DIR."inc/functions_themes.php";
+    // Funktion
+    $css = lexicon_stylesheet();
     $sid = $db->insert_query("themestylesheets", $css);
-	$db->update_query("themestylesheets", array("cachefile" => "css.php?stylesheet=".$sid), "sid = '".$sid."'", 1);
+	$db->update_query("themestylesheets", array("cachefile" => "lexicon.css"), "sid = '".$sid."'", 1);
 
 	$tids = $db->simple_select("themes", "tid");
 	while($theme = $db->fetch_array($tids)) {
 		update_theme_stylesheet_list($theme['tid']);
-	}
+	}  
 
 	// TEMPLATES ERSTELLEN
 	// Template Gruppe für jedes Design erstellen
@@ -391,925 +81,8 @@ function lexicon_install(){
         "prefix" => "lexicon",
         "title" => $db->escape_string("Lexikon"),
     );
-
     $db->insert_query("templategroups", $templategroup);
-	
-
-    $insert_array = array(
-        'title'		=> 'lexicon_add_category',
-        'template'	=> $db->escape_string('<html>
-		  <head>
-			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_nav_add_category}</title>
-			{$headerinclude}
-		 </head>
-		 <body>
-			{$header}
-			<table width="100%" cellspacing="5" cellpadding="0">
-				<tr>
-					<td valign="top">
-						<div id="lexicon">
-							{$menu}
-							<div class="lexicon-entry">
-								<div class="entry-headline">{$lang->lexicon_nav_add_category}</div>
-								<div class="entry">
-								
-									<form  action="lexicon.php?action=do_category" method="post">
-										<table width="100%">
-											<tbody>	
-												<tr>
-													<td class="trow1">
-														<strong>{$lang->lexicon_add_categoryname_titel}</strong>
-														<div class="smalltext">{$lang->lexicon_add_categoryname_desc}</div>
-													</td>
-													<td class="trow1">
-														<input type="text" name="categoryname" id="categoryname" placeholder="Name" class="textbox" required>
-													</td>		
-												</tr>
-																		
-												{$sort_option}
-					
-												<tr>
-													<td colspan="2" align="center">
-														<input type="submit" name="do_category" value="{$lang->lexicon_nav_add_category}" class="button" />
-													</td>
-												</tr>	
-											</tbody>
-										</table>	
-									</form>
-									
-								</div>
-							</div>
-						</div>
-					</td>
-				</tr>
-			</table>
-			{$footer}
-		 </body>	
-	</html>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_add_entry',
-        'template'	=> $db->escape_string('<html>
-		<head>
-			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_nav_add_entry}</title>
-			{$headerinclude}
-		</head>
-		<body>
-			{$header}
-			<table width="100%" cellspacing="5" cellpadding="0">
-				<tr>
-					<td valign="top">
-						<div id="lexicon">
-							{$menu}
-							<div class="lexicon-entry">
-								<div class="entry-headline">{$lang->lexicon_nav_add_entry}</div>
-								<div class="entry">
-									<form  action="lexicon.php?action=do_entry&edit={$eid}" method="post">
-										<table width="100%">
-											<tbody>			
-												<tr>
-													<td class="trow1">
-														<strong>{$lang->lexicon_add_category_titel}</strong>
-														<div class="smalltext">{$lang->lexicon_add_category_desc}</div>
-													</td>				
-													<td class="trow1">
-														<select name="category" required>
-															<option value="">Kategorie wählen</option>
-															{$cat_select}
-														</select> 
-													</td>
-												</tr>
-												
-												{$sub_option}
-												
-												<tr>
-													<td class="trow1">
-														<strong>{$lang->lexicon_add_linktitle_titel}</strong>
-														<div class="smalltext">{$lang->lexicon_add_linktitle_desc}</div>
-													</td>
-													<td class="trow1">
-														<input type="text" name="linktitle" id="linktitle" placeholder="Linktitel" class="textbox" required> 
-													</td>
-												</tr>
-												
-												<tr>
-													<td class="trow1">
-														<strong>{$lang->lexicon_add_link_titel}</strong>
-														<div class="smalltext">{$lang->lexicon_add_link_desc}</div>
-													</td>
-													<td class="trow1">
-														<input type="text" name="link" id="link" placeholder="bildung, usa, relations" class="textbox">
-													</td>
-												</tr>
-												
-												<tr>
-													<td class="trow1">
-														<strong>{$lang->lexicon_add_externallink_titel}</strong>
-														<div class="smalltext">{$lang->lexicon_add_externallink_desc}</div>
-													</td>
-													<td class="trow1">
-														<input type="text" name="externallink" id="externallink" placeholder="misc.php?action=xxx" class="textbox">
-													</td>
-												</tr>
-												
-												<tr>
-													<td class="trow1">
-														<strong>{$lang->lexicon_add_title_titel}</strong>
-														<div class="smalltext">{$lang->lexicon_add_title_desc}</div>
-													</td>
-													<td class="trow1">
-														<input type="text" name="title" id="title" placeholder="Titel des Artikels" class="textbox">
-													</td>
-												</tr>
-												
-												{$sort_option}
-												
-												<tr>
-													<td class="trow1" colspan="2">
-														<strong>{$lang->lexicon_add_entrytext}</strong>
-													</td>
-												</tr>
-												<tr>
-													<td class="trow1" colspan="2">
-														<textarea class="textarea" name="entrytext" id="entrytext" rows="6" cols="30" style="width: 95%"></textarea>
-													</td>
-												</tr>
-												
-												<tr>
-													<td colspan="2" align="center">
-														<input type="submit" name="do_entry" value="{$lang->lexicon_nav_add_entry}" class="button" />
-													</td>
-												</tr>	
-											</tbody>
-										</table>
-									</form>
-								</div>
-							</div>
-						</div>
-					</td>
-				</tr>
-			</table>
-			{$footer}
-		</body>
-	</html>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_add_sort',
-        'template'	=> $db->escape_string('<tr>
-		<td class="trow1">
-			<strong>{$lang->lexicon_sort_titel}</strong>
-			<div class="smalltext">{$lang->lexicon_sort_desc}</div>
-		</td>
-		<td class="trow1">
-			<input type="number" name="sort" id="sort" class="textbox" value="{$sort}">
-		</td>
-	</tr>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_add_subentry',
-        'template'	=> $db->escape_string('<tr>
-		<td class="trow1">
-			<strong>{$lang->lexicon_sub_titel}</strong>
-			<div class="smalltext">{$lang->lexicon_sub_desc}</div>
-		</td>				
-		<td class="trow1">
-			<select name="parentlist" required>
-				<option value="0">Kein Untereintrag</option>
-				{$entries_select}
-			</select> 
-		</td>
-	</tr>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_contents',
-        'template'	=> $db->escape_string('<html>
-		<head>
-			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_contents}</title>
-			{$headerinclude}
-		</head>
-		<body>
-			{$header}
-			<table width="100%" cellspacing="5" cellpadding="0">
-				<tr>
-					<td valign="top">
-						<div id="lexicon">
-							{$menu}
-							<div class="lexicon-entry">
-								<div class="entry-headline">{$lang->lexicon_contents}</div>
-								<div class="entry content">{$lang->lexicon_contents_desc}</div>
-								<div class="content-bit">
-									{$contents_bit}
-								</div>
-							</div>
-						</div>
-					</td>
-				</tr>
-			</table>
-			{$footer}
-		</body>
-	</html>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_contents_bit',
-        'template'	=> $db->escape_string('<div class="content-letter">
-		<h2>{$buchstabe}</h2>
-		{$entries}
-	</div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_contents_entries',
-        'template'	=> $db->escape_string('<div class="content-item">● <a href="{$fulllink}">{$linktitle}</a> <span class="content-item-cat">({$categoryname})</span></div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_edit_category',
-        'template'	=> $db->escape_string('<html>
-		<head>
-			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_nav_edit_category}</title>
-			{$headerinclude}
-		</head>
-		<body>
-			{$header}
-			<table width="100%" cellspacing="5" cellpadding="0">
-				<tr>
-					<td valign="top">
-						<div id="lexicon">
-							{$menu}
-							<div class="lexicon-entry">
-								<div class="entry-headline">{$lang->lexicon_nav_edit_category}</div>
-								<div class="entry">
-									
-									<form  action="lexicon.php?edit=do_category&cid={$cid}" method="post">
-										<table width="100%">
-											<tbody>			
-												<tr>
-													<td class="trow1">
-														<strong>{$lang->lexicon_add_categoryname_titel}</strong>
-														<div class="smalltext">{$lang->lexicon_add_categoryname_desc}</div>
-													</td>				
-													<td class="trow1">
-														<input type="text" name="categoryname" id="categoryname" value="{$categoryname}" class="textbox" required>
-													</td>
-												</tr>
-												
-												{$sort_option}
-												
-												<tr>
-													<td colspan="2" align="center">
-														<input type="submit" name="do_category" value="{$lang->lexicon_nav_edit_category}" class="button" />
-													</td>
-												</tr>	
-											</tbody>
-										</table>
-									</form>
-									
-								</div>
-							</div>
-						</div>
-					</td>
-				</tr>
-			</table>
-			{$footer}
-		</body>
-	</html>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_edit_entry',
-        'template'	=> $db->escape_string('<html>
-		<head>
-			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_nav_edit_entry}</title>
-			{$headerinclude}
-	    </head>
-		<body>
-			{$header}
-			<table width="100%" cellspacing="5" cellpadding="0">
-				<tr>
-					<td valign="top">
-						<div id="lexicon">
-							{$menu}
-							<div class="lexicon-entry">
-								<div class="entry-headline">{$lang->lexicon_nav_edit_entry}</div>
-								<div class="entry">
-									<form  action="lexicon.php?edit=do_entry&eid={$eid}" method="post">
-										<table width="100%">
-											<tbody>			
-												<tr>
-													<td class="trow1">
-														<strong>{$lang->lexicon_add_category_titel}</strong>
-														<div class="smalltext">{$lang->lexicon_add_category_desc}</div>
-													</td>				
-													<td class="trow1">
-														<select name="category" required>
-															{$cat_select}
-														</select> 
-													</td>
-												</tr>
-												
-												{$sub_option}
-	
-												<tr>
-													<td class="trow1">
-														<strong>{$lang->lexicon_add_linktitle_titel}</strong>
-														<div class="smalltext">{$lang->lexicon_add_linktitle_desc}</div>
-													</td>
-													<td class="trow1">
-														<input type="text" name="linktitle" id="linktitle" value="{$linktitle}" class="textbox" required> 
-													</td>
-												</tr>
-												
-												<tr>
-													<td class="trow1">
-														<strong>{$lang->lexicon_add_link_titel}</strong>
-														<div class="smalltext">{$lang->lexicon_add_link_desc}</div>
-													</td>
-													<td class="trow1">
-														<input type="text" name="link" id="link" value="{$link}" class="textbox" required>
-													</td>
-												</tr>
-	
-												<tr>
-													<td class="trow1">
-														<strong>{$lang->lexicon_add_title_titel}</strong>
-														<div class="smalltext">{$lang->lexicon_add_title_desc}</div>
-													</td>
-													<td class="trow1">
-														<input type="text" name="title" id="title" value="{$title}" class="textbox" required>
-													</td>
-												</tr>
-
-												{$sort_option}
-				
-												<tr>
-													<td class="trow1" colspan="2">
-														<strong>{$lang->lexicon_add_entrytext}</strong>
-													</td>
-												</tr>
-												<tr>
-													<td class="trow1" colspan="2">
-														<textarea class="textarea" name="entrytext" id="entrytext" rows="6" cols="30" style="width: 95%">{$entrytext}</textarea>
-													</td>
-												</tr>
-				
-												<tr>
-													<td colspan="2" align="center">
-														<input type="submit" name="do_entry" value="{$lang->lexicon_nav_edit_entry}" class="button" />
-													</td>
-												</tr>	
-											</tbody>
-										</table>
-									</form>
-								</div>
-							</div>
-						</div>
-					</td>
-				</tr>
-			</table>
-			{$footer}
-		</body>
-	</html>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_edit_externallink',
-        'template'	=> $db->escape_string('<html>
-		<head>
-			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_nav_edit_externallink}</title>
-			{$headerinclude}
-		</head>
-		<body>
-			{$header}
-			<table width="100%" cellspacing="5" cellpadding="0">
-				<tr>
-					<td valign="top">
-						<div id="lexicon">
-							{$menu}
-							<div class="lexicon-entry">
-								<div class="entry-headline">{$lang->lexicon_nav_edit_externallink}</div>
-								<div class="entry">
-									<form  action="lexicon.php?edit=do_externallink&eid={$eid}" method="post">
-										<table width="100%">
-											<tbody>			
-												<tr>
-													<td class="trow1">
-														<strong>{$lang->lexicon_add_category_titel}</strong>
-														<div class="smalltext">{$lang->lexicon_add_category_desc}</div>
-													</td>				
-													<td class="trow1">
-														<select name="category" required>
-															{$cat_select}
-														</select> 
-													</td>
-												</tr>
-													
-													{$sub_option}
-													
-													<tr>
-														<td class="trow1">
-															<strong>{$lang->lexicon_add_linktitle_titel}</strong>
-															<div class="smalltext">{$lang->lexicon_add_linktitle_desc}</div>
-														</td>
-														<td class="trow1">
-															<input type="text" name="linktitle" id="linktitle" value="{$linktitle}" class="textbox" required> 
-														</td>
-													</tr>
-													
-													<tr>
-														<td class="trow1">
-															<strong>{$lang->lexicon_add_externallink_titel}</strong>
-															<div class="smalltext">{$lang->lexicon_add_externallink_desc}</div>
-														</td>
-														<td class="trow1">
-															<input type="text" name="externallink" id="externallink" value="{$externallink}" class="textbox" required>
-														</td>
-													</tr>
-	
-												{$sort_option}
-	
-												<tr>
-													<td colspan="2" align="center">
-														<input type="submit" name="do_externallink" value="{$lang->lexicon_nav_edit_externallink}" class="button" />
-													</td>
-												</tr>	
-											</tbody>
-										</table>
-									</form>
-								</div>
-							</div>
-						</div>
-					</td>
-				</tr>
-			</table>
-			{$footer}
-		</body>
-	</html>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_entry',
-        'template'	=> $db->escape_string('<html>
-		<head>
-			<title>{$mybb->settings[\'bbname\']} - {$linktitle}</title>
-			{$headerinclude}</head>
-		<body>
-			{$header}
-			<table width="100%" cellspacing="5" cellpadding="0">
-				<tr>
-					<td valign="top">
-						<div id="lexicon">
-							{$menu}
-							<div class="lexicon-entry">
-								<div class="entry-headline">{$title}</div>
-								{$option_buttons_entry}
-								<div class="entry">{$entrytext}</div>
-							</div>
-						</div>
-					</td>
-				</tr>
-			</table>
-			{$footer}
-		</body>
-	</html>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_mainpage',
-        'template'	=> $db->escape_string('<html>
-		<head>
-			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_nav_main}</title>
-			{$headerinclude}</head>
-		<body>
-			{$header}
-			<table width="100%" cellspacing="5" cellpadding="0">
-				<tr>
-					<td valign="top">
-						<div id="lexicon">
-							{$menu}
-							<div class="lexicon-entry">
-								<div class="entry-headline">{$lang->lexicon_nav_main}</div>
-								<div class="entry">{$lang->lexicon_main_desc}</div>
-							</div>
-						</div>
-					</td>
-				</tr>
-			</table>
-			{$footer}
-		</body>
-	</html>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_menu',
-        'template'	=> $db->escape_string('<div id="navigation">
-		<div class="navigation-headline">
-			<a href="lexicon.php">{$lang->lexicon_nav_main}</a>
-		</div>  
-		<div class="navigation-search">
-			<form action="lexicon.php" method="get">
-				<input type="hidden" name="search" value="results">
-				<input type="text" class="textbox" name="keyword" id="keyword" placeholder="Suchbegriff eingeben" value="">
-				<button type="submit">Suchen</button>
-			</form>
-		</div>
-		{$menu_contents} 
-		{$add_cat}
-		{$add_entry}
-		{$menu_cat}    
-	</div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_menu_add_cat',
-        'template'	=> $db->escape_string('<div class="navigation-item">
-		<a href="lexicon.php?action=add_category">{$lang->lexicon_nav_add_category}</a>	
-	</div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_menu_add_entry',
-        'template'	=> $db->escape_string('<div class="navigation-item">
-		<a href="lexicon.php?action=add_entry">{$lang->lexicon_nav_add_entry}</a>	
-	</div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_menu_cat',
-        'template'	=> $db->escape_string('<div class="navigation-headline">
-		{$category} 
-		{$option_buttons_cat}
-	</div>
-	{$entries}'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_menu_entries',
-        'template'	=> $db->escape_string('<div class="navigation-item">
-		<a href="{$fulllink}">{$linktitle}</a> 
-		{$option_menu_externallink}
-	</div>	
-	{$subentries}'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_menu_externallink_option',
-        'template'	=> $db->escape_string('<div class="navigation-externallink-option">
-		<a href="lexicon.php?edit=externallink&eid={$eid}">E</a> 
-	   <a href="lexicon.php?delete_externallink={$eid}" onClick="return confirm(\'{$lang->lexicon_externallink_delet_notice}\');">X</a>
-   </div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_menu_subentries',
-        'template'	=> $db->escape_string('<div class="navigation-subitem">
-		<i>»&nbsp;</i> 
-		<a href="{$subfulllink}">{$sublinktitle}</a>
-		{$option_menu_externallink}
-	</div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_modcp',
-        'template'	=> $db->escape_string('<html>
-		<head>
-			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_modcp}</title>
-			{$headerinclude}
-		</head>
-		<body>
-			{$header}
-			<table width="100%" border="0" align="center">
-				<tr>
-					{$modcp_nav}
-					<td valign="top">
-						<table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
-							<tr>
-								<td class="thead"><strong>{$lang->lexicon_modcp}</strong></td>
-							</tr>
-							<tr>
-								<td class="trow1">
-									{$modcp_control_none}
-									{$modcp_control_bit}
-								</td>
-							</tr>
-						</table>
-					</td>
-				</tr>
-			</table>
-			{$footer}
-		</body>
-	</html>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_modcp_bit',
-        'template'	=> $db->escape_string('<table width="100%">
-		<tr>
-			<td class="tcat" align="center" colspan="2">
-				<strong>{$title}</strong>
-			</td>
-		</tr>
-		<tr>
-			<td class="smalltext" rowspan="2" width="20%">
-				<strong>{$lang->lexicon_modcp_linktitel}</strong> {$linktitle}<br>
-				<strong>{$lang->lexicon_modcp_link}</strong> {$link}<br>
-				<b>{$lang->lexicon_modcp_sendby}</b> {$createdby}
-			</td>
-			<td class="thead smalltext" align="center">
-				{$path}
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<div style="max-height: 100px; overflow: auto;text-align:justify;padding-right:10px;">
-					{$entrytext}
-				</div>
-			</td>
-		</tr>
-		<tr>
-			<td colspan="2" align="center">
-				<a href="modcp.php?action=lexicon&accept={$eid}" class="button">{$lang->lexicon_modcp_accept_button}</a>
-				<a href="modcp.php?action=lexicon_entryedit&eid={$eid}" class="button">{$lang->lexicon_modcp_edit_button}</a>
-				<a href="modcp.php?action=lexicon&delete={$eid}" class="button">{$lang->lexicon_modcp_delete_button}</a> 
-			</td>
-		</tr>
-	</table>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_modcp_nav',
-        'template'	=> $db->escape_string('<tr>
-		<td class="trow1 smalltext"><a href="modcp.php?action=lexicon" class="modcp_nav_item modcp_nav_modqueue">{$lang->lexicon_modcp_nav}</td>	
-	</tr>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_header_link',
-        'template'	=> $db->escape_string('<li><a href="{$mybb->settings[\'bburl\']}/lexicon.php" class="help">{$lang->lexicon_nav_main}</a></li>'),
-        'sid'		=> '-2',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_header_banner',
-        'template'	=> $db->escape_string('<div class="red_alert">{$newentry_notice}</div>'),
-        'sid'		=> '-2',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_entry_option',
-        'template'	=> $db->escape_string('<div class="entry-subline">{$edit_button}  {$delete_button}</div>'),
-        'sid'		=> '-2',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_menu_cat_option',
-        'template'	=> $db->escape_string('<a href="lexicon.php?edit=category&cid={$cid}">E</a> 
-		<a href="lexicon.php?delete_category={$cid}" onClick="return confirm(\'{$lang->lexicon_cat_delet_notice}\');">X</a>'),
-        'sid'		=> '-2',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_search_results',
-        'template'	=> $db->escape_string('<html>
-		<head>
-			<title>{$mybb->settings[\'bbname\']} - {$lexicon_nav_search}</title>
-			{$headerinclude}</head>
-		<body>
-			{$header}
-			<table width="100%" cellspacing="5" cellpadding="0">
-				<tr>
-					<td valign="top">
-						<div id="lexicon">
-							{$menu}
-							<div class="lexicon-entry">
-								<div class="entry-headline">{$lexicon_nav_search}</div>
-								<div class="entry">{$results_none}{$results_bit}</div>
-							</div>
-						</div>
-					</td>
-				</tr>
-			</table>
-			{$footer}
-		</body>
-	</html>'),
-        'sid'		=> '-2',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_search_results_bit',
-        'template'	=> $db->escape_string('<div class="lexicon_search_results">
-		<div class="lexicon_search_results_headline"><strong><a href="{$fulllink}">{$title}</a></strong> » {$categoryname}</div>
-		<div class="lexicon_search_results_previw">
-			{$previw_entry}
-		</div>
-	</div>'),
-        'sid'		=> '-2',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'lexicon_modcp_edit',
-        'template'	=> $db->escape_string('<html>
-		<head>
-			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_nav_edit_entry}</title>
-			{$headerinclude}
-		</head>
-		<body>
-			{$header}
-			<table width="100%" border="0" align="center">
-				<tr>
-					{$modcp_nav}
-					<td valign="top">
-						<table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
-							<tr>
-								<td class="thead"><strong>{$lang->lexicon_nav_edit_entry}</strong></td>
-							</tr>
-							<tr>
-								<td class="trow1">
-										<form action="modcp.php?action=do_lexicon_entryedit&eid={$eid}" method="post">
-											<table width="100%">
-												<tbody>			
-													<tr>
-														<td class="trow1">
-															<strong>{$lang->lexicon_add_category_titel}</strong>
-															<div class="smalltext">{$lang->lexicon_add_category_desc}</div>
-														</td>				
-														<td class="trow1">
-															<select name="category" required>
-																{$cat_select}
-															</select> 
-														</td>
-													</tr>
-													
-													{$sub_option}
-		
-													<tr>
-														<td class="trow1">
-															<strong>{$lang->lexicon_add_linktitle_titel}</strong>
-															<div class="smalltext">{$lang->lexicon_add_linktitle_desc}</div>
-														</td>
-														<td class="trow1">
-															<input type="text" name="linktitle" id="linktitle" value="{$linktitle}" class="textbox" required> 
-														</td>
-													</tr>
-													
-													<tr>
-														<td class="trow1">
-															<strong>{$lang->lexicon_add_link_titel}</strong>
-															<div class="smalltext">{$lang->lexicon_add_link_desc}</div>
-														</td>
-														<td class="trow1">
-															<input type="text" name="link" id="link" value="{$link}" class="textbox" required>
-														</td>
-													</tr>
-		
-													<tr>
-														<td class="trow1">
-															<strong>{$lang->lexicon_add_title_titel}</strong>
-															<div class="smalltext">{$lang->lexicon_add_title_desc}</div>
-														</td>
-														<td class="trow1">
-															<input type="text" name="title" id="title" value="{$title}" class="textbox" required>
-														</td>
-													</tr>
-	
-													{$sort_option}
-					
-													<tr>
-														<td class="trow1" colspan="2">
-															<strong>{$lang->lexicon_add_entrytext}</strong>
-														</td>
-													</tr>
-													<tr>
-														<td class="trow1" colspan="2">
-															<textarea class="textarea" name="entrytext" id="entrytext" rows="6" cols="30" style="width: 95%">{$entrytext}</textarea>
-														</td>
-													</tr>
-					
-													<tr>
-														<td colspan="2" align="center">
-															<input type="submit" name="do_lexicon_entryedit" value="{$lang->lexicon_nav_edit_entry}" class="button" />
-														</td>
-													</tr>	
-												</tbody>
-											</table>
-										</form>
-								</td>
-							</tr>
-						</table>
-					</td>
-				</tr>
-			</table>
-			{$footer}
-		</body>
-	</html>'),
-        'sid'		=> '-2',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
+    lexicon_templates();
 
 }
  
@@ -1342,6 +115,9 @@ function lexicon_uninstall(){
     $db->delete_query('settinggroups', "name = 'lexicon'");
 
     rebuild_settings();
+
+    // TEMPLATGRUPPE LÖSCHEN
+    $db->delete_query("templategroups", "prefix = 'lexicon'");
 
     // TEMPLATES LÖSCHEN
     $db->delete_query("templates", "title LIKE '%lexicon%'");
@@ -1450,6 +226,226 @@ function lexicon_settings_peek(&$peekers){
             </script>';
         }
 	}
+}
+
+// ADMIN BEREICH - KONFIGURATION //
+
+// action handler fürs acp konfigurieren
+function lexicon_admin_rpgstuff_action_handler(&$actions) {
+	$actions['lexicon_transfer'] = array('active' => 'lexicon_transfer', 'file' => 'lexicon_transfer');
+}
+
+// im Menü einfügen [Übertragen]
+function lexicon_admin_rpgstuff_menu_updates(&$sub_menu) {
+
+	global $mybb, $lang, $db;
+
+    if (!$db->table_exists("wiki_categories") AND !$db->table_exists("wiki_entries")) {
+        
+        // $lang->load('inplayscenes');
+    
+        $sub_menu[] = [
+            "id" => "lexicon_transfer",
+            "title" => "Wiki-Daten übertragen",
+            "link" => "index.php?module=rpgstuff-lexicon_transfer"
+        ];
+    }
+}
+
+// die Seite zum Übertragen
+function lexicon_admin_manage() {
+
+	global $mybb, $db, $lang, $page, $run_module, $action_file, $cache;
+
+    if ($page->active_action != 'lexicon_transfer') {
+		return false;
+	}
+
+    if ($run_module == 'rpgstuff' && $action_file == 'lexicon_transfer') {
+
+        // Add to page navigation
+        $page->add_breadcrumb_item("Wiki-Daten übertragen", "index.php?module=rpgstuff-lexicon_transfer");
+
+		if ($mybb->get_input('action') == "" || !$mybb->get_input('action')) {
+
+            $page->output_header("Wiki-Daten ins Lexikon übertragen");
+    
+            if ($mybb->request_method == 'post') {
+				
+				$db->query("INSERT INTO ".TABLE_PREFIX."lexicon_categories (cid, categoryname, sort) SELECT cid, category, sort FROM ".TABLE_PREFIX."wiki_categories");
+				$db->query("INSERT INTO ".TABLE_PREFIX."lexicon_entries (eid, cid, linktitle, link, externallink, title, entrytext, sort, parentlist, uid, accepted) SELECT wid, cid, linktitle, link, '', title, wikitext, sort, 0, uid, accepted FROM ".TABLE_PREFIX."wiki_entries");
+			
+                                
+				// Log admin action                   
+				log_admin_action("Wiki-Daten übertragen");
+        
+				flash_message("Alle Kategorien und die entsprechenden Einträge wurden erfolgreich übertragen. Du kannst nun das Wiki-Plugin entfernen.", 'success');
+				admin_redirect("index.php?module=rpgstuff-inplayscenes_updates");
+			}
+			
+			// Show errors
+			if (isset($errors)) {
+				$page->output_inline_error($errors);
+			}
+    
+            $form = new Form("index.php?module=rpgstuff-lexicon_transfer", "post", "", 1);
+            $form_container = new FormContainer("Wiki-Daten ins Lexikon übertragen");
+            echo $form->generate_hidden_field("my_post_key", $mybb->post_code);
+  
+            $lexicon_categories = $db->fetch_field($db->query("SELECT cid FROM ".TABLE_PREFIX."lexicon_categories"), "cid");
+
+            if ($lexicon_categories == 0) {
+
+				$form_container->output_row(
+					"Datein importieren von Ales Wiki Plugin in das Lexikon",
+					"Mit einem einfachen Klick können alle Kategorien und die entsprechenden Einträge vom Wiki-Plugin von Ales in das Lexikon übertragen werden."
+				);
+
+                $form_container->end();
+                $buttons[] = $form->generate_submit_button("Daten übertragen");
+                $form->output_submit_wrapper($buttons);
+            } else {
+                $form_container->output_cell("Es bestehen schon Kategorien und Einträge, weswegen keine Übertragung möglich ist.", array('style' => 'text-align: center;'));
+                $form_container->construct_row();
+
+                $form_container->end();
+            }
+
+            $form->end();
+            $page->output_footer();
+            exit;
+		}
+	}
+}
+
+// Stylesheet zum Master Style hinzufügen
+function lexicon_admin_update_stylesheet(&$table) {
+
+    global $db, $mybb, $lang;
+	
+    $lang->load('rpgstuff_stylesheet_updates');
+
+    require_once MYBB_ADMIN_DIR."inc/functions_themes.php";
+
+    // HINZUFÜGEN
+    if ($mybb->input['action'] == 'add_master' AND $mybb->get_input('plugin') == "lexicon") {
+
+        $css = lexicon_stylesheet();
+        
+        $sid = $db->insert_query("themestylesheets", $css);
+        $db->update_query("themestylesheets", array("cachefile" => "lexicon.css"), "sid = '".$sid."'", 1);
+    
+        $tids = $db->simple_select("themes", "tid");
+        while($theme = $db->fetch_array($tids)) {
+            update_theme_stylesheet_list($theme['tid']);
+        } 
+
+        flash_message($lang->stylesheets_flash, "success");
+        admin_redirect("index.php?module=rpgstuff-stylesheet_updates");
+    }
+
+    // Zelle mit dem Namen des Themes
+    $table->construct_cell("<b>".htmlspecialchars_uni("Boardinternes Lexikon")."</b>", array('width' => '70%'));
+
+    // Ob im Master Style vorhanden
+    $master_check = $db->fetch_field($db->query("SELECT tid FROM ".TABLE_PREFIX."themestylesheets 
+    WHERE name = 'lexicon.css' 
+    AND tid = 1
+    "), "tid");
+    
+    if (!empty($master_check)) {
+        $masterstyle = true;
+    } else {
+        $masterstyle = false;
+    }
+
+    if (!empty($masterstyle)) {
+        $table->construct_cell($lang->stylesheets_masterstyle, array('class' => 'align_center'));
+    } else {
+        $table->construct_cell("<a href=\"index.php?module=rpgstuff-stylesheet_updates&action=add_master&plugin=lexicon\">".$lang->stylesheets_add."</a>", array('class' => 'align_center'));
+    }
+    
+    $table->construct_row();
+}
+
+// Plugin Update
+function lexicon_admin_update_plugin(&$table) {
+
+    global $db, $mybb, $lang;
+	
+    $lang->load('rpgstuff_plugin_updates');
+
+    // UPDATE
+    if ($mybb->input['action'] == 'add_update' AND $mybb->get_input('plugin') == "lexicon") {
+
+        // Einstellungen überprüfen => Type = update
+        lexicon_settings('update');
+        rebuild_settings();
+
+        // Templates 
+        lexicon_templates('update');
+
+        // Stylesheet
+        $update_data = lexicon_stylesheet_update();
+        $update_stylesheet = $update_data['stylesheet'];
+        $update_string = $update_data['update_string'];
+        if (!empty($update_string)) {
+
+            // Ob im Master Style die Überprüfung vorhanden ist
+            $masterstylesheet = $db->fetch_field($db->query("SELECT stylesheet FROM ".TABLE_PREFIX."themestylesheets WHERE tid = 1 AND name = 'lexicon.css'"), "stylesheet");
+            $pos = strpos($masterstylesheet, $update_string);
+            if ($pos === false) { // nicht vorhanden 
+            
+                $theme_query = $db->simple_select('themes', 'tid, name');
+                while ($theme = $db->fetch_array($theme_query)) {
+        
+                    $stylesheet_query = $db->simple_select("themestylesheets", "*", "name='".$db->escape_string('lexicon.css')."' AND tid = ".$theme['tid']);
+                    $stylesheet = $db->fetch_array($stylesheet_query);
+        
+                    if ($stylesheet) {
+
+                        require_once MYBB_ADMIN_DIR."inc/functions_themes.php";
+        
+                        $sid = $stylesheet['sid'];
+            
+                        $updated_stylesheet = array(
+                            "cachefile" => $db->escape_string($stylesheet['name']),
+                            "stylesheet" => $db->escape_string($stylesheet['stylesheet']."\n\n".$update_stylesheet),
+                            "lastmodified" => TIME_NOW
+                        );
+            
+                        $db->update_query("themestylesheets", $updated_stylesheet, "sid='".$sid."'");
+            
+                        if(!cache_stylesheet($theme['tid'], $stylesheet['name'], $updated_stylesheet['stylesheet'])) {
+                            $db->update_query("themestylesheets", array('cachefile' => "css.php?stylesheet=".$sid), "sid='".$sid."'", 1);
+                        }
+            
+                        update_theme_stylesheet_list($theme['tid']);
+                    }
+                }
+            } 
+        }
+
+        // Datenbanktabellen & Felder
+        lexicon_database();
+
+        flash_message($lang->plugins_flash, "success");
+        admin_redirect("index.php?module=rpgstuff-plugin_updates");
+    }
+
+    // Zelle mit dem Namen des Themes
+    $table->construct_cell("<b>".htmlspecialchars_uni("Boardinternes Lexikon")."</b>", array('width' => '70%'));
+
+    // Überprüfen, ob Update erledigt
+    $update_check = lexicon_is_updated();
+
+    if (!empty($update_check)) {
+        $table->construct_cell($lang->plugins_actual, array('class' => 'align_center'));
+    } else {
+        $table->construct_cell("<a href=\"index.php?module=rpgstuff-plugin_updates&action=add_update&plugin=lexicon\">".$lang->plugins_update."</a>", array('class' => 'align_center'));
+    }
+    
+    $table->construct_row();
 }
 
 // TEAMHINWEIS
@@ -1856,7 +852,7 @@ function lexicon_online_activity($user_activity) {
     global $parameters, $user, $db, $side_name;
 
     $split_loc = explode(".php", $user_activity['location']);
-    if($split_loc[0] == $user['location']) {
+    if(isset($user['location']) && $split_loc[0] == $user['location']) { 
         $filename = '';
     } else {
         $filename = my_substr($split_loc[0], -my_strpos(strrev($split_loc[0]), "/"));
@@ -2164,4 +1160,1323 @@ function lexicon_myalert_alerts() {
     }
 
 
+}
+
+// DATENBANKTABELLEN
+function lexicon_database() {
+
+    global $db;
+    
+    // DATENBANKEN ERSTELLEN
+    // Kategorien
+    if (!$db->table_exists("lexicon_categories")) {
+        $db->query("CREATE TABLE ".TABLE_PREFIX."lexicon_categories(
+			`cid` int(10) NOT NULL AUTO_INCREMENT,
+			`categoryname` varchar(500) CHARACTER SET utf8 NOT NULL,
+			`sort` INT(10) DEFAULT '0' NOT NULL,
+			PRIMARY KEY(`cid`),
+			KEY `cid` (`cid`)
+			)
+			ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci AUTO_INCREMENT=1
+		");
+    }
+    // Einträge
+    if (!$db->table_exists("lexicon_entries")) {
+        $db->query("CREATE TABLE ".TABLE_PREFIX."lexicon_entries(
+			`eid` int(10) NOT NULL auto_increment, 
+			`cid` int(11) NOT NULL,  
+			`linktitle` varchar(255) CHARACTER SET utf8 NOT NULL,  
+			`link` varchar(255) CHARACTER SET utf8 NOT NULL,  
+			`externallink` varchar(500) CHARACTER SET utf8 NOT NULL,  
+			`title` varchar(255) CHARACTER SET utf8 NOT NULL,
+			`entrytext` longtext CHARACTER SET utf8 NOT NULL,
+			`sort` INT(10) DEFAULT '0' NOT NULL,
+			`parentlist` varchar(255) CHARACTER SET utf8 DEFAULT '0' NOT NULL,
+			`uid` int(10) NOT NULL,
+			`accepted` int(10) DEFAULT '0' NOT NULL,
+			PRIMARY KEY(`eid`),
+			KEY `eid` (`eid`)
+			)
+			ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci AUTO_INCREMENT=1
+		");
+    }
+}
+
+// EINSTELLUNGEN
+function lexicon_settings($type = 'install') {
+
+    global $db; 
+
+    $setting_array = array(
+		'lexicon_groups_cat' => array(
+			'title' => 'Gruppen für Kategorien',
+			'description' => 'Welche Gruppen haben die Möglichkeit neue Kategorien für das Lexikon hinzufügen?',
+			'optionscode' => 'groupselect',
+			'value' => 4, // Default
+			'disporder' => 1
+		),
+		'lexicon_groups_entry' => array(
+			'title' => 'Gruppen für Einträge',
+			'description' => 'Welche Gruppen haben die Möglichkeit neue Einträge für das Lexikon hinzufügen?',
+			'optionscode' => 'groupselect',
+			'value' => 4, // Default
+			'disporder' => 2
+		),
+		'lexicon_user_accepted' => array(
+			'title' => 'Überprüfung von Einträgen',
+			'description' => 'Sollen eingereichte Einträge von Usern vorher überprüft werden und manuell vom Team freigeschaltet werden?',
+			'optionscode' => 'yesno',
+			'value' => 0, // Default
+			'disporder' => 3
+		),
+		'lexicon_user_edit' => array(
+			'title' => 'Bearbeitung von Einträgen',
+			'description' => 'Dürfen User ihre eingereichten Einträge selbstständig bearbeiten? Eine weitere Überprüfung vom oder Benachrichtigung ans Team wird es nicht geben.',
+			'optionscode' => 'yesno',
+			'value' => 0, // Default
+			'disporder' => 4
+		),
+		'lexicon_user_delete' => array(
+			'title' => 'Löschen von Einträgen',
+			'description' => 'Dürfen User ihre eingereichten Einträge selbstständig löschen?',
+			'optionscode' => 'yesno',
+			'value' => 0, // Default
+			'disporder' => 5
+		),
+		'lexicon_user_alert' => array(
+			'title' => 'Benachrichtigungsystem',
+			'description' => 'Wie sollen User darüber in Kenntnis gesetzt werden, dass ihr eingereichter Lexikoneintrag angenommen bzw. abgelehnt wurde?',
+			'optionscode' => 'select\n0=MyAlerts\n1=Private Nachricht',
+			'value' => 0, // Default
+			'disporder' => 6
+		),
+		'lexicon_sort_cat' => array(
+			'title' => 'Sortierung der Kategorien',
+			'description' => 'Sollen die Kategorien im Menü alphabetisch nach ihren Namen sortiert werden, oder nach einer manuellen Sortierung?'			,
+			'optionscode' => 'select\n0=Kategorienamen\n1=manuelle Sortierung',
+			'value' => 0, // Default
+			'disporder' => 7
+		),
+		'lexicon_sort_entry' => array(
+			'title' => 'Sortierung der Einträge',
+			'description' => 'Sollen die Einträge im Menü alphabetisch nach ihren Linktitel sortiert werden oder nach einer manuellen Sortierung?',
+			'optionscode' => 'select\n0=Linktitel\n1=manuelle Sortierung',
+			'value' => 0, // Default
+			'disporder' => 8
+		),
+		'lexicon_contents' => array(
+			'title' => 'Inhaltsverzeichnis',
+			'description' => 'Soll ein großes Inhaltsverzeichnis erstellt werden? Die Beiträge werden alphabetisch kategorisiert.',
+			'optionscode' => 'yesno',
+			'value' => 1, // Default
+			'disporder' => 9
+		),
+		'lexicon_sub' => array(
+			'title' => 'Untereinträge',
+			'description' => 'Können Einträge auch noch Untereinträge bekommen?',
+			'optionscode' => 'yesno',
+			'value' => 1, // Default
+			'disporder' => 10
+		),
+	);
+
+    $gid = $db->fetch_field($db->write_query("SELECT gid FROM ".TABLE_PREFIX."settinggroups WHERE name = 'lexicon' LIMIT 1;"), "gid");
+
+    if ($type == 'install') {
+        foreach ($setting_array as $name => $setting) {
+          $setting['name'] = $name;
+          $setting['gid'] = $gid;
+          $db->insert_query('settings', $setting);
+        }  
+    }
+
+    if ($type == 'update') {
+
+        // Einzeln durchgehen 
+        foreach ($setting_array as $name => $setting) {
+            $setting['name'] = $name;
+            $check = $db->write_query("SELECT name FROM ".TABLE_PREFIX."settings WHERE name = '".$name."'"); // Überprüfen, ob sie vorhanden ist
+            $check = $db->num_rows($check);
+            $setting['gid'] = $gid;
+            if ($check == 0) { // nicht vorhanden, hinzufügen
+              $db->insert_query('settings', $setting);
+            }
+        }  
+    }
+
+    rebuild_settings();
+}
+
+// TEMPLATES
+function lexicon_templates($mode = '') {
+
+    global $db;
+
+    $templates[] = array(
+        'title'		=> 'lexicon_add_category',
+        'template'	=> $db->escape_string('<html>
+		  <head>
+			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_nav_add_category}</title>
+			{$headerinclude}
+		 </head>
+		 <body>
+			{$header}
+			<table width="100%" cellspacing="5" cellpadding="0">
+				<tr>
+					<td valign="top">
+						<div id="lexicon">
+							{$menu}
+							<div class="lexicon-entry">
+								<div class="entry-headline">{$lang->lexicon_nav_add_category}</div>
+								<div class="entry">
+								
+									<form  action="lexicon.php?action=do_category" method="post">
+										<table width="100%">
+											<tbody>	
+												<tr>
+													<td class="trow1">
+														<strong>{$lang->lexicon_add_categoryname_titel}</strong>
+														<div class="smalltext">{$lang->lexicon_add_categoryname_desc}</div>
+													</td>
+													<td class="trow1">
+														<input type="text" name="categoryname" id="categoryname" placeholder="Name" class="textbox" required>
+													</td>		
+												</tr>
+																		
+												{$sort_option}
+					
+												<tr>
+													<td colspan="2" align="center">
+														<input type="submit" name="do_category" value="{$lang->lexicon_nav_add_category}" class="button" />
+													</td>
+												</tr>	
+											</tbody>
+										</table>	
+									</form>
+									
+								</div>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</table>
+			{$footer}
+		 </body>	
+	 </html>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'lexicon_add_entry',
+        'template'	=> $db->escape_string('<html>
+		<head>
+			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_nav_add_entry}</title>
+			{$headerinclude}
+		</head>
+		<body>
+			{$header}
+			<table width="100%" cellspacing="5" cellpadding="0">
+				<tr>
+					<td valign="top">
+						<div id="lexicon">
+							{$menu}
+							<div class="lexicon-entry">
+								<div class="entry-headline">{$lang->lexicon_nav_add_entry}</div>
+								<div class="entry">
+									<form  action="lexicon.php?action=do_entry&edit={$eid}" method="post">
+										<table width="100%">
+											<tbody>			
+												<tr>
+													<td class="trow1">
+														<strong>{$lang->lexicon_add_category_titel}</strong>
+														<div class="smalltext">{$lang->lexicon_add_category_desc}</div>
+													</td>				
+													<td class="trow1">
+														<select name="category" required>
+															<option value="">Kategorie wählen</option>
+															{$cat_select}
+														</select> 
+													</td>
+												</tr>
+												
+												{$sub_option}
+												
+												<tr>
+													<td class="trow1">
+														<strong>{$lang->lexicon_add_linktitle_titel}</strong>
+														<div class="smalltext">{$lang->lexicon_add_linktitle_desc}</div>
+													</td>
+													<td class="trow1">
+														<input type="text" name="linktitle" id="linktitle" placeholder="Linktitel" class="textbox" required> 
+													</td>
+												</tr>
+												
+												<tr>
+													<td class="trow1">
+														<strong>{$lang->lexicon_add_link_titel}</strong>
+														<div class="smalltext">{$lang->lexicon_add_link_desc}</div>
+													</td>
+													<td class="trow1">
+														<input type="text" name="link" id="link" placeholder="bildung, usa, relations" class="textbox">
+													</td>
+												</tr>
+												
+												<tr>
+													<td class="trow1">
+														<strong>{$lang->lexicon_add_externallink_titel}</strong>
+														<div class="smalltext">{$lang->lexicon_add_externallink_desc}</div>
+													</td>
+													<td class="trow1">
+														<input type="text" name="externallink" id="externallink" placeholder="misc.php?action=xxx" class="textbox">
+													</td>
+												</tr>
+												
+												<tr>
+													<td class="trow1">
+														<strong>{$lang->lexicon_add_title_titel}</strong>
+														<div class="smalltext">{$lang->lexicon_add_title_desc}</div>
+													</td>
+													<td class="trow1">
+														<input type="text" name="title" id="title" placeholder="Titel des Artikels" class="textbox">
+													</td>
+												</tr>
+												
+												{$sort_option}
+												
+												<tr>
+													<td class="trow1" colspan="2">
+														<strong>{$lang->lexicon_add_entrytext}</strong>
+													</td>
+												</tr>
+												<tr>
+													<td class="trow1" colspan="2">
+														<textarea class="textarea" name="entrytext" id="entrytext" rows="6" cols="30" style="width: 95%"></textarea>
+													</td>
+												</tr>
+												
+												<tr>
+													<td colspan="2" align="center">
+														<input type="submit" name="do_entry" value="{$lang->lexicon_nav_add_entry}" class="button" />
+													</td>
+												</tr>	
+											</tbody>
+										</table>
+									</form>
+								</div>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</table>
+			{$footer}
+		</body>
+	 </html>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+    
+	$templates[] = array(
+        'title'		=> 'lexicon_add_sort',
+        'template'	=> $db->escape_string('<tr>
+		<td class="trow1">
+			<strong>{$lang->lexicon_sort_titel}</strong>
+			<div class="smalltext">{$lang->lexicon_sort_desc}</div>
+		</td>
+		<td class="trow1">
+			<input type="number" name="sort" id="sort" class="textbox" value="{$sort}">
+		</td>
+	 </tr>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+    
+	$templates[] = array(
+        'title'		=> 'lexicon_add_subentry',
+        'template'	=> $db->escape_string('<tr>
+		<td class="trow1">
+			<strong>{$lang->lexicon_sub_titel}</strong>
+			<div class="smalltext">{$lang->lexicon_sub_desc}</div>
+		</td>				
+		<td class="trow1">
+			<select name="parentlist" required>
+				<option value="0">Kein Untereintrag</option>
+				{$entries_select}
+			</select> 
+		</td>
+	 </tr>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+    
+	$templates[] = array(
+        'title'		=> 'lexicon_contents',
+        'template'	=> $db->escape_string('<html>
+		<head>
+			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_contents}</title>
+			{$headerinclude}
+		</head>
+		<body>
+			{$header}
+			<table width="100%" cellspacing="5" cellpadding="0">
+				<tr>
+					<td valign="top">
+						<div id="lexicon">
+							{$menu}
+							<div class="lexicon-entry">
+								<div class="entry-headline">{$lang->lexicon_contents}</div>
+								<div class="entry content">{$lang->lexicon_contents_desc}</div>
+								<div class="content-bit">
+									{$contents_bit}
+								</div>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</table>
+			{$footer}
+		</body>
+	 </html>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+    
+    $templates[] = array(
+        'title'		=> 'lexicon_contents_bit',
+        'template'	=> $db->escape_string('<div class="content-letter">
+		<h2>{$buchstabe}</h2>
+		{$entries}
+	 </div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );   
+
+	$templates[] = array(
+        'title'		=> 'lexicon_contents_entries',
+        'template'	=> $db->escape_string('<div class="content-item">● <a href="{$fulllink}">{$linktitle}</a> <span class="content-item-cat">({$categoryname})</span></div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+	$templates[] = array(
+        'title'		=> 'lexicon_edit_category',
+        'template'	=> $db->escape_string('<html>
+		<head>
+			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_nav_edit_category}</title>
+			{$headerinclude}
+		</head>
+		<body>
+			{$header}
+			<table width="100%" cellspacing="5" cellpadding="0">
+				<tr>
+					<td valign="top">
+						<div id="lexicon">
+							{$menu}
+							<div class="lexicon-entry">
+								<div class="entry-headline">{$lang->lexicon_nav_edit_category}</div>
+								<div class="entry">
+									
+									<form  action="lexicon.php?edit=do_category&cid={$cid}" method="post">
+										<table width="100%">
+											<tbody>			
+												<tr>
+													<td class="trow1">
+														<strong>{$lang->lexicon_add_categoryname_titel}</strong>
+														<div class="smalltext">{$lang->lexicon_add_categoryname_desc}</div>
+													</td>				
+													<td class="trow1">
+														<input type="text" name="categoryname" id="categoryname" value="{$categoryname}" class="textbox" required>
+													</td>
+												</tr>
+												
+												{$sort_option}
+												
+												<tr>
+													<td colspan="2" align="center">
+														<input type="submit" name="do_category" value="{$lang->lexicon_nav_edit_category}" class="button" />
+													</td>
+												</tr>	
+											</tbody>
+										</table>
+									</form>
+									
+								</div>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</table>
+			{$footer}
+		</body>
+	 </html>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+    
+    $templates[] = array(
+        'title'		=> 'lexicon_edit_entry',
+        'template'	=> $db->escape_string('<html>
+		<head>
+			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_nav_edit_entry}</title>
+			{$headerinclude}
+	    </head>
+		<body>
+			{$header}
+			<table width="100%" cellspacing="5" cellpadding="0">
+				<tr>
+					<td valign="top">
+						<div id="lexicon">
+							{$menu}
+							<div class="lexicon-entry">
+								<div class="entry-headline">{$lang->lexicon_nav_edit_entry}</div>
+								<div class="entry">
+									<form  action="lexicon.php?edit=do_entry&eid={$eid}" method="post">
+										<table width="100%">
+											<tbody>			
+												<tr>
+													<td class="trow1">
+														<strong>{$lang->lexicon_add_category_titel}</strong>
+														<div class="smalltext">{$lang->lexicon_add_category_desc}</div>
+													</td>				
+													<td class="trow1">
+														<select name="category" required>
+															{$cat_select}
+														</select> 
+													</td>
+												</tr>
+												
+												{$sub_option}
+	
+												<tr>
+													<td class="trow1">
+														<strong>{$lang->lexicon_add_linktitle_titel}</strong>
+														<div class="smalltext">{$lang->lexicon_add_linktitle_desc}</div>
+													</td>
+													<td class="trow1">
+														<input type="text" name="linktitle" id="linktitle" value="{$linktitle}" class="textbox" required> 
+													</td>
+												</tr>
+												
+												<tr>
+													<td class="trow1">
+														<strong>{$lang->lexicon_add_link_titel}</strong>
+														<div class="smalltext">{$lang->lexicon_add_link_desc}</div>
+													</td>
+													<td class="trow1">
+														<input type="text" name="link" id="link" value="{$link}" class="textbox" required>
+													</td>
+												</tr>
+	
+												<tr>
+													<td class="trow1">
+														<strong>{$lang->lexicon_add_title_titel}</strong>
+														<div class="smalltext">{$lang->lexicon_add_title_desc}</div>
+													</td>
+													<td class="trow1">
+														<input type="text" name="title" id="title" value="{$title}" class="textbox" required>
+													</td>
+												</tr>
+
+												{$sort_option}
+				
+												<tr>
+													<td class="trow1" colspan="2">
+														<strong>{$lang->lexicon_add_entrytext}</strong>
+													</td>
+												</tr>
+												<tr>
+													<td class="trow1" colspan="2">
+														<textarea class="textarea" name="entrytext" id="entrytext" rows="6" cols="30" style="width: 95%">{$entrytext}</textarea>
+													</td>
+												</tr>
+				
+												<tr>
+													<td colspan="2" align="center">
+														<input type="submit" name="do_entry" value="{$lang->lexicon_nav_edit_entry}" class="button" />
+													</td>
+												</tr>	
+											</tbody>
+										</table>
+									</form>
+								</div>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</table>
+			{$footer}
+		</body>
+	 </html>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+    
+    $templates[] = array(
+        'title'		=> 'lexicon_edit_externallink',
+        'template'	=> $db->escape_string('<html>
+		<head>
+			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_nav_edit_externallink}</title>
+			{$headerinclude}
+		</head>
+		<body>
+			{$header}
+			<table width="100%" cellspacing="5" cellpadding="0">
+				<tr>
+					<td valign="top">
+						<div id="lexicon">
+							{$menu}
+							<div class="lexicon-entry">
+								<div class="entry-headline">{$lang->lexicon_nav_edit_externallink}</div>
+								<div class="entry">
+									<form  action="lexicon.php?edit=do_externallink&eid={$eid}" method="post">
+										<table width="100%">
+											<tbody>			
+												<tr>
+													<td class="trow1">
+														<strong>{$lang->lexicon_add_category_titel}</strong>
+														<div class="smalltext">{$lang->lexicon_add_category_desc}</div>
+													</td>				
+													<td class="trow1">
+														<select name="category" required>
+															{$cat_select}
+														</select> 
+													</td>
+												</tr>
+													
+													{$sub_option}
+													
+													<tr>
+														<td class="trow1">
+															<strong>{$lang->lexicon_add_linktitle_titel}</strong>
+															<div class="smalltext">{$lang->lexicon_add_linktitle_desc}</div>
+														</td>
+														<td class="trow1">
+															<input type="text" name="linktitle" id="linktitle" value="{$linktitle}" class="textbox" required> 
+														</td>
+													</tr>
+													
+													<tr>
+														<td class="trow1">
+															<strong>{$lang->lexicon_add_externallink_titel}</strong>
+															<div class="smalltext">{$lang->lexicon_add_externallink_desc}</div>
+														</td>
+														<td class="trow1">
+															<input type="text" name="externallink" id="externallink" value="{$externallink}" class="textbox" required>
+														</td>
+													</tr>
+	
+												{$sort_option}
+	
+												<tr>
+													<td colspan="2" align="center">
+														<input type="submit" name="do_externallink" value="{$lang->lexicon_nav_edit_externallink}" class="button" />
+													</td>
+												</tr>	
+											</tbody>
+										</table>
+									</form>
+								</div>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</table>
+			{$footer}
+		</body>
+	 </html>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+    
+    $templates[] = array(
+        'title'		=> 'lexicon_entry',
+        'template'	=> $db->escape_string('<html>
+		<head>
+			<title>{$mybb->settings[\'bbname\']} - {$linktitle}</title>
+			{$headerinclude}</head>
+		<body>
+			{$header}
+			<table width="100%" cellspacing="5" cellpadding="0">
+				<tr>
+					<td valign="top">
+						<div id="lexicon">
+							{$menu}
+							<div class="lexicon-entry">
+								<div class="entry-headline">{$title}</div>
+								{$option_buttons_entry}
+								<div class="entry">{$entrytext}</div>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</table>
+			{$footer}
+		</body>
+	 </html>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+    
+    $templates[] = array(
+        'title'		=> 'lexicon_mainpage',
+        'template'	=> $db->escape_string('<html>
+		<head>
+			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_nav_main}</title>
+			{$headerinclude}</head>
+		<body>
+			{$header}
+			<table width="100%" cellspacing="5" cellpadding="0">
+				<tr>
+					<td valign="top">
+						<div id="lexicon">
+							{$menu}
+							<div class="lexicon-entry">
+								<div class="entry-headline">{$lang->lexicon_nav_main}</div>
+								<div class="entry">{$lang->lexicon_main_desc}</div>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</table>
+			{$footer}
+		</body>
+	 </html>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+    
+    $templates[] = array(
+        'title'		=> 'lexicon_menu',
+        'template'	=> $db->escape_string('<div id="navigation">
+		<div class="navigation-headline">
+			<a href="lexicon.php">{$lang->lexicon_nav_main}</a>
+		</div>  
+		<div class="navigation-search">
+			<form action="lexicon.php" method="get">
+				<input type="hidden" name="search" value="results">
+				<input type="text" class="textbox" name="keyword" id="keyword" placeholder="Suchbegriff eingeben" value="">
+				<button type="submit">Suchen</button>
+			</form>
+		</div>
+		{$menu_contents} 
+		{$add_cat}
+		{$add_entry}
+		{$menu_cat}    
+	 </div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );  
+
+    $templates[] = array(
+        'title'		=> 'lexicon_menu_add_cat',
+        'template'	=> $db->escape_string('<div class="navigation-item">
+		<a href="lexicon.php?action=add_category">{$lang->lexicon_nav_add_category}</a>	
+	 </div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'lexicon_menu_add_entry',
+        'template'	=> $db->escape_string('<div class="navigation-item">
+		<a href="lexicon.php?action=add_entry">{$lang->lexicon_nav_add_entry}</a>	
+	 </div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+    
+    $templates[] = array(
+        'title'		=> 'lexicon_menu_cat',
+        'template'	=> $db->escape_string('<div class="navigation-headline">
+		{$category} 
+		{$option_buttons_cat}
+	 </div>
+	 {$entries}'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+    
+    $templates[] = array(
+        'title'		=> 'lexicon_menu_entries',
+        'template'	=> $db->escape_string('<div class="navigation-item">
+		<a href="{$fulllink}">{$linktitle}</a> 
+		{$option_menu_externallink}
+	 </div>	
+	 {$subentries}'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+    
+    $templates[] = array(
+        'title'		=> 'lexicon_menu_externallink_option',
+        'template'	=> $db->escape_string('<div class="navigation-externallink-option">
+		<a href="lexicon.php?edit=externallink&eid={$eid}">E</a> 
+	   <a href="lexicon.php?delete_externallink={$eid}" onClick="return confirm(\'{$lang->lexicon_externallink_delet_notice}\');">X</a>
+     </div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );  
+
+    $templates[] = array(
+        'title'		=> 'lexicon_menu_subentries',
+        'template'	=> $db->escape_string('<div class="navigation-subitem">
+		<i>»&nbsp;</i> 
+		<a href="{$subfulllink}">{$sublinktitle}</a>
+		{$option_menu_externallink}
+		</div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+    
+	$templates[] = array(
+        'title'		=> 'lexicon_modcp',
+        'template'	=> $db->escape_string('<html>
+		<head>
+			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_modcp}</title>
+			{$headerinclude}
+		</head>
+		<body>
+			{$header}
+			<table width="100%" border="0" align="center">
+				<tr>
+					{$modcp_nav}
+					<td valign="top">
+						<table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
+							<tr>
+								<td class="thead"><strong>{$lang->lexicon_modcp}</strong></td>
+							</tr>
+							<tr>
+								<td class="trow1">
+									{$modcp_control_none}
+									{$modcp_control_bit}
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+			</table>
+			{$footer}
+		</body>
+    	</html>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+    
+    $templates[] = array(
+        'title'		=> 'lexicon_modcp_bit',
+        'template'	=> $db->escape_string('<table width="100%">
+		<tr>
+			<td class="tcat" align="center" colspan="2">
+				<strong>{$title}</strong>
+			</td>
+		</tr>
+		<tr>
+			<td class="smalltext" rowspan="2" width="20%">
+				<strong>{$lang->lexicon_modcp_linktitel}</strong> {$linktitle}<br>
+				<strong>{$lang->lexicon_modcp_link}</strong> {$link}<br>
+				<b>{$lang->lexicon_modcp_sendby}</b> {$createdby}
+			</td>
+			<td class="thead smalltext" align="center">
+				{$path}
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<div style="max-height: 100px; overflow: auto;text-align:justify;padding-right:10px;">
+					{$entrytext}
+				</div>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="2" align="center">
+				<a href="modcp.php?action=lexicon&accept={$eid}" class="button">{$lang->lexicon_modcp_accept_button}</a>
+				<a href="modcp.php?action=lexicon_entryedit&eid={$eid}" class="button">{$lang->lexicon_modcp_edit_button}</a>
+				<a href="modcp.php?action=lexicon&delete={$eid}" class="button">{$lang->lexicon_modcp_delete_button}</a> 
+			</td>
+		</tr>
+		</table>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+    
+    $templates[] = array(
+        'title'		=> 'lexicon_modcp_nav',
+        'template'	=> $db->escape_string('<tr>
+		<td class="trow1 smalltext"><a href="modcp.php?action=lexicon" class="modcp_nav_item modcp_nav_modqueue">{$lang->lexicon_modcp_nav}</td>	
+		</tr>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+    
+    $templates[] = array(
+        'title'		=> 'lexicon_header_link',
+        'template'	=> $db->escape_string('<li><a href="{$mybb->settings[\'bburl\']}/lexicon.php" class="help">{$lang->lexicon_nav_main}</a></li>'),
+        'sid'		=> '-2',
+        'dateline'	=> TIME_NOW
+    );
+    
+    $templates[] = array(
+        'title'		=> 'lexicon_header_banner',
+        'template'	=> $db->escape_string('<div class="red_alert">{$newentry_notice}</div>'),
+        'sid'		=> '-2',
+        'dateline'	=> TIME_NOW
+    );
+    
+    $templates[] = array(
+        'title'		=> 'lexicon_entry_option',
+        'template'	=> $db->escape_string('<div class="entry-subline">{$edit_button}  {$delete_button}</div>'),
+        'sid'		=> '-2',
+        'dateline'	=> TIME_NOW
+    );
+    
+    $templates[] = array(
+        'title'		=> 'lexicon_menu_cat_option',
+        'template'	=> $db->escape_string('<a href="lexicon.php?edit=category&cid={$cid}">E</a> 
+		<a href="lexicon.php?delete_category={$cid}" onClick="return confirm(\'{$lang->lexicon_cat_delet_notice}\');">X</a>'),
+        'sid'		=> '-2',
+        'dateline'	=> TIME_NOW
+    );
+    
+    $templates[] = array(
+        'title'		=> 'lexicon_search_results',
+        'template'	=> $db->escape_string('<html>
+		<head>
+			<title>{$mybb->settings[\'bbname\']} - {$lexicon_nav_search}</title>
+			{$headerinclude}</head>
+		<body>
+			{$header}
+			<table width="100%" cellspacing="5" cellpadding="0">
+				<tr>
+					<td valign="top">
+						<div id="lexicon">
+							{$menu}
+							<div class="lexicon-entry">
+								<div class="entry-headline">{$lexicon_nav_search}</div>
+								<div class="entry">{$results_none}{$results_bit}</div>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</table>
+			{$footer}
+		</body>
+	 </html>'),
+        'sid'		=> '-2',
+        'dateline'	=> TIME_NOW
+    );
+    
+	$templates[] = array(
+		'title'		=> 'lexicon_search_results_bit',
+        'template'	=> $db->escape_string('<div class="lexicon_search_results">
+		<div class="lexicon_search_results_headline"><strong><a href="{$fulllink}">{$title}</a></strong> » {$categoryname}</div>
+		<div class="lexicon_search_results_previw">
+			{$previw_entry}
+		</div>
+	 </div>'),
+        'sid'		=> '-2',
+        'dateline'	=> TIME_NOW
+    );
+    
+    $templates[] = array(
+        'title'		=> 'lexicon_modcp_edit',
+        'template'	=> $db->escape_string('<html>
+		<head>
+			<title>{$mybb->settings[\'bbname\']} - {$lang->lexicon_nav_edit_entry}</title>
+			{$headerinclude}
+		</head>
+		<body>
+			{$header}
+			<table width="100%" border="0" align="center">
+				<tr>
+					{$modcp_nav}
+					<td valign="top">
+						<table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
+							<tr>
+								<td class="thead"><strong>{$lang->lexicon_nav_edit_entry}</strong></td>
+							</tr>
+							<tr>
+								<td class="trow1">
+										<form action="modcp.php?action=do_lexicon_entryedit&eid={$eid}" method="post">
+											<table width="100%">
+												<tbody>			
+													<tr>
+														<td class="trow1">
+															<strong>{$lang->lexicon_add_category_titel}</strong>
+															<div class="smalltext">{$lang->lexicon_add_category_desc}</div>
+														</td>				
+														<td class="trow1">
+															<select name="category" required>
+																{$cat_select}
+															</select> 
+														</td>
+													</tr>
+													
+													{$sub_option}
+		
+													<tr>
+														<td class="trow1">
+															<strong>{$lang->lexicon_add_linktitle_titel}</strong>
+															<div class="smalltext">{$lang->lexicon_add_linktitle_desc}</div>
+														</td>
+														<td class="trow1">
+															<input type="text" name="linktitle" id="linktitle" value="{$linktitle}" class="textbox" required> 
+														</td>
+													</tr>
+													
+													<tr>
+														<td class="trow1">
+															<strong>{$lang->lexicon_add_link_titel}</strong>
+															<div class="smalltext">{$lang->lexicon_add_link_desc}</div>
+														</td>
+														<td class="trow1">
+															<input type="text" name="link" id="link" value="{$link}" class="textbox" required>
+														</td>
+													</tr>
+		
+													<tr>
+														<td class="trow1">
+															<strong>{$lang->lexicon_add_title_titel}</strong>
+															<div class="smalltext">{$lang->lexicon_add_title_desc}</div>
+														</td>
+														<td class="trow1">
+															<input type="text" name="title" id="title" value="{$title}" class="textbox" required>
+														</td>
+													</tr>
+	
+													{$sort_option}
+					
+													<tr>
+														<td class="trow1" colspan="2">
+															<strong>{$lang->lexicon_add_entrytext}</strong>
+														</td>
+													</tr>
+													<tr>
+														<td class="trow1" colspan="2">
+															<textarea class="textarea" name="entrytext" id="entrytext" rows="6" cols="30" style="width: 95%">{$entrytext}</textarea>
+														</td>
+													</tr>
+					
+													<tr>
+														<td colspan="2" align="center">
+															<input type="submit" name="do_lexicon_entryedit" value="{$lang->lexicon_nav_edit_entry}" class="button" />
+														</td>
+													</tr>	
+												</tbody>
+											</table>
+										</form>
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+			</table>
+			{$footer}
+		</body>
+    	</html>'),
+        'sid'		=> '-2',
+        'dateline'	=> TIME_NOW
+    );
+
+    if ($mode == "update") {
+
+        foreach ($templates as $template) {
+            $query = $db->simple_select("templates", "tid, template", "title = '".$template['title']."' AND sid = '-2'");
+            $existing_template = $db->fetch_array($query);
+
+            if($existing_template) {
+                if ($existing_template['template'] !== $template['template']) {
+                    $db->update_query("templates", array(
+                        'template' => $template['template'],
+                        'dateline' => TIME_NOW
+                    ), "tid = '".$existing_template['tid']."'");
+                }
+            }
+            
+            else {
+                $db->insert_query("templates", $template);
+            }
+        }
+
+    } else {
+        foreach ($templates as $template) {
+            $check = $db->num_rows($db->simple_select("templates", "title", "title = '".$template['title']."'"));
+            if ($check == 0) {
+                $db->insert_query("templates", $template);
+            }
+        }
+    }
+}
+
+// STYLESHEET MASTER
+function lexicon_stylesheet() {
+
+    global $db;
+    
+    $css = array(
+		'name' => 'lexicon.css',
+		'tid' => 1,
+		'attachedto' => '',
+		"stylesheet" =>	'#lexicon {
+			width: 100%;
+			display: flex;
+			gap: 20px;
+			justify-content: space-between;
+			align-items: flex-start;    
+		}
+		
+		#lexicon #navigation {
+			width: 20%;
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			background: #fff;
+			border: 1px solid #ccc;
+			padding: 1px;
+			-moz-border-radius: 7px;
+			-webkit-border-radius: 7px;
+			border-radius: 7px;   
+		}
+		
+		#lexicon #navigation .navigation-headline {
+			min-height: 50px;
+			width: 100%;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			font-weight: bold;
+			text-transform: uppercase;
+			text-align: center;
+			padding: 0 5px;
+			box-sizing: border-box;
+			background: #0066a2 url(../../../images/thead.png) top left repeat-x;
+			color: #ffffff;
+		}
+		
+		#lexicon #navigation .navigation-headline:first-child {
+			-moz-border-radius-topleft: 6px;
+			-moz-border-radius-topright: 6px;
+			-webkit-border-top-left-radius: 6px;
+			-webkit-border-top-right-radius: 6px;
+			border-top-left-radius: 6px;
+			border-top-right-radius: 6px; 
+		}
+		
+		#lexicon #navigation .navigation-headline:first-child a:link,
+		#lexicon #navigation .navigation-headline:first-child a:visited,
+		#lexicon #navigation .navigation-headline:first-child a:active,
+		#lexicon #navigation .navigation-headline:first-child a:hover {
+			margin-left: 0;
+		}
+		
+		#lexicon #navigation .navigation-headline a:link,
+		#lexicon #navigation .navigation-headline a:visited,
+		#lexicon #navigation .navigation-headline a:active,
+		#lexicon #navigation .navigation-headline a:hover {
+			color: #ffffff;
+			margin-left: 5px;
+		}
+		
+		#lexicon #navigation .navigation-item {
+			min-height: 25px;
+			width: 100%;
+			margin: 0 auto;
+			padding: 5px 20px;
+			display: flex;
+			align-items: center;
+			box-sizing: border-box;
+			border-bottom: 1px solid #ddd;
+			background: #f5f5f5;
+		}
+		
+		#lexicon #navigation .navigation-item:last-child {
+			-moz-border-radius-bottomright: 6px;
+			-webkit-border-bottom-right-radius: 6px;
+			border-bottom-right-radius: 6px;
+			-moz-border-radius-bottomleft: 6px;
+			-webkit-border-bottom-left-radius: 6px;
+			border-bottom-left-radius: 6px;
+		}
+		
+		#lexicon #navigation .navigation-subitem {
+			min-height: 25px;
+			width: 100%;
+			margin: 0 auto;
+			padding: 0 20px 0px 20px;
+			display: flex;
+			align-items: center;
+			box-sizing: border-box;
+			border-bottom: 1px solid #ddd;
+			background: #f5f5f5;
+		}
+		
+		#lexicon #navigation .navigation-subitem i {
+			font-size: 11px;
+			padding-top: 1px;
+		}
+		
+		#lexicon #navigation .navigation-externallink-option {
+			width: 100%;
+			text-align: right;
+		}
+		
+		#lexicon #navigation .navigation-search {
+			width: 100%;
+			margin: 0 auto;
+			padding: 10px 0;
+			display: flex;
+			align-items: center;
+			box-sizing: border-box;
+			border-bottom: 1px solid #ddd;
+			background: #f5f5f5;
+			justify-content: center;
+		}
+		
+		#lexicon #navigation .navigation-search input.textbox {
+			width: 68%;
+		}
+		
+		#lexicon .lexicon-entry {
+			width: 80%;
+			box-sizing: border-box;
+			background: #fff;
+			border: 1px solid #ccc;
+			padding: 1px;
+			-moz-border-radius: 7px;
+			-webkit-border-radius: 7px;
+			border-radius: 7px;    
+		}
+		
+		#lexicon .lexicon-entry .entry-headline {
+			height: 50px;
+			width: 100%;
+			font-size: 30px;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			font-weight: bold;
+			text-transform: uppercase;
+			background: #0066a2 url(../../../images/thead.png) top left repeat-x;
+			color: #ffffff;
+			-moz-border-radius-topleft: 6px;
+			-moz-border-radius-topright: 6px;
+			-webkit-border-top-left-radius: 6px;
+			-webkit-border-top-right-radius: 6px;
+			border-top-left-radius: 6px;
+			border-top-right-radius: 6px; 
+		}
+		
+		
+		#lexicon .lexicon-entry .entry-subline {
+			text-align: right;
+			padding-right: 10px;
+			padding-top: 5px;
+			background: #f5f5f5;
+		}
+		
+		#lexicon .lexicon-entry .entry {
+			background: #f5f5f5;
+			padding: 20px 40px;
+			text-align: justify;
+			line-height: 180%;   
+			-moz-border-radius-bottomright: 6px;
+			-webkit-border-bottom-right-radius: 6px;
+			border-bottom-right-radius: 6px;
+			-moz-border-radius-bottomleft: 6px;
+			-webkit-border-bottom-left-radius: 6px;
+			border-bottom-left-radius: 6px; 
+		}
+		
+		#lexicon .lexicon-entry .entry.content {
+			-moz-border-radius-bottomright: 0;
+			-webkit-border-bottom-right-radius: 0;
+			border-bottom-right-radius: 0;
+			-moz-border-radius-bottomleft: 0;
+			-webkit-border-bottom-left-radius: 0;
+			border-bottom-left-radius: 0;
+		}
+		
+		#lexicon .lexicon-entry .content-bit {
+			padding: 0 40px 40px 40px;
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: space-between;
+			gap: 20px;
+			background:#f5f5f5;
+			-moz-border-radius-bottomright: 6px;
+			-webkit-border-bottom-right-radius: 6px;
+			border-bottom-right-radius: 6px;
+			-moz-border-radius-bottomleft: 6px;
+			-webkit-border-bottom-left-radius: 6px;
+			border-bottom-left-radius: 6px; 
+		}
+		
+		#lexicon .lexicon-entry .content-bit .content-letter {
+			width: 45%;     
+		}
+		
+		#lexicon .lexicon-entry .content-bit .content-letter .content-item {
+			margin-bottom: 5px;    
+		}
+		
+		#lexicon .lexicon-entry .content-bit .content-letter .content-item .content-item-cat {
+			font-size:0.7em;
+		}
+		
+		#lexicon .lexicon-entry .lexicon_search_results {
+			margin-bottom: 10px;
+		}',
+		'cachefile' => $db->escape_string(str_replace('/', '', 'lexicon.css')),
+		'lastmodified' => time()
+	);
+
+    return $css;
+}
+
+// STYLESHEET UPDATE
+function lexicon_stylesheet_update() {
+
+    // Update-Stylesheet
+    // wird an bestehende Stylesheets immer ganz am ende hinzugefügt
+    $update = '';
+
+    // Definiere den  Überprüfung-String (muss spezifisch für die Überprüfung sein)
+    $update_string = '';
+
+    return array(
+        'stylesheet' => $update,
+        'update_string' => $update_string
+    );
+}
+
+// UPDATE CHECK
+function lexicon_is_updated(){
+
+    global $db, $mybb;
+
+    if ($db->table_exists("lexicon_categories")) {
+        return true;
+    }
+    return false;
 }
