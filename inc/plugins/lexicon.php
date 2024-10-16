@@ -8,7 +8,6 @@ if(!defined("IN_MYBB")){
 $plugins->add_hook('admin_config_settings_change', 'lexicon_settings_change');
 $plugins->add_hook('admin_settings_print_peekers', 'lexicon_settings_peek');
 $plugins->add_hook("admin_rpgstuff_action_handler", "lexicon_admin_rpgstuff_action_handler");
-$plugins->add_hook("admin_rpgstuff_permissions", "lexicon_admin_rpgstuff_permissions");
 $plugins->add_hook("admin_rpgstuff_menu_updates", "lexicon_admin_rpgstuff_menu_updates");
 $plugins->add_hook("admin_load", "lexicon_admin_manage");
 $plugins->add_hook('admin_rpgstuff_update_stylesheet', 'lexicon_admin_update_stylesheet');
