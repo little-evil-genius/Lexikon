@@ -5,6 +5,7 @@ Das Lexikon beinhaltet auf Wunsch ein Inhaltsverzeichnis oder besser gesagt ein 
 
 # Vorrausetzung
 - Das ACP Modul <a href="https://github.com/little-evil-genius/rpgstuff_modul" target="_blank">RPG Stuff</a> <b>muss</b> vorhanden sein.
+- Der <a href="https://doylecc.altervista.org/bb/downloads.php?dlid=26&cat=2" target="_blank">Accountswitcher</a> von doylecc <b>muss</b> installiert sein.
 
 # Datenbank-Änderungen
 hinzugefügte Tabelle:
