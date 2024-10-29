@@ -29,7 +29,7 @@ function lexicon_info(){
 		"website"	=> "hhttps://github.com/little-evil-genius/Lexikon",
 		"author"	=> "little.evil.genius",
 		"authorsite"	=> "https://storming-gates.de/member.php?action=profile&uid=1712",
-		"version"	=> "1.2",
+		"version"	=> "1.2.1",
 		"compatibility" => "18*"
 	);
 }
@@ -267,10 +267,23 @@ function lexicon_admin_manage() {
             $page->output_header("Wiki-Daten ins Lexikon übertragen");
     
             if ($mybb->request_method == 'post') {
-				
-				$db->query("INSERT INTO ".TABLE_PREFIX."lexicon_categories (cid, categoryname, sort) SELECT cid, category, sort FROM ".TABLE_PREFIX."wiki_categories");
-				$db->query("INSERT INTO ".TABLE_PREFIX."lexicon_entries (eid, cid, linktitle, link, externallink, title, entrytext, sort, parentlist, uid, accepted) SELECT wid, cid, linktitle, link, '', title, wikitext, sort, '0', uid, accepted FROM ".TABLE_PREFIX."wiki_entries");
-                                
+
+				if (lexicon_columnExists("wiki_categories", "sort")) {
+					// Code, falls die Spalte 'sort' existiert
+					$db->query("INSERT INTO ".TABLE_PREFIX."lexicon_categories (cid, categoryname, sort) SELECT cid, category, sort FROM ".TABLE_PREFIX."wiki_categories");
+				} else {
+					// Code, falls die Spalte 'sort' nicht existiert
+					$db->query("INSERT INTO ".TABLE_PREFIX."lexicon_categories (cid, categoryname, sort) SELECT cid, category, 0 AS sort FROM ".TABLE_PREFIX."wiki_categories");
+				}
+
+				if (lexicon_columnExists("wiki_entries", "sort")) {
+					// Code, falls die Spalte 'sort' existiert
+					$db->query("INSERT INTO ".TABLE_PREFIX."lexicon_entries (eid, cid, linktitle, link, externallink, title, entrytext, sort, parentlist, uid, accepted) SELECT wid, cid, linktitle, link, '', title, wikitext, sort, '0', uid, accepted FROM ".TABLE_PREFIX."wiki_entries");
+				} else {
+					// Code, falls die Spalte 'sort' nicht existiert
+					$db->query("INSERT INTO ".TABLE_PREFIX."lexicon_entries (eid, cid, linktitle, link, externallink, title, entrytext, sort, parentlist, uid, accepted) SELECT wid, cid, linktitle, link, '', title, wikitext, 0, '0', uid, accepted FROM ".TABLE_PREFIX."wiki_entries");
+				}
+		    
 				// Log admin action                   
 				log_admin_action("Wiki-Daten übertragen");
         
@@ -2503,4 +2516,12 @@ function lexicon_is_updated(){
         return true;
     }
     return false;
+}
+
+function lexicon_columnExists($table, $column) {
+    global $db;
+
+    $query = $db->query("SHOW COLUMNS FROM ".TABLE_PREFIX."".$table." LIKE '".$column."'");
+	
+    return $db->num_rows($query) > 0;
 }
