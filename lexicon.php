@@ -280,7 +280,7 @@ if($mybb->get_input('search') == "results") {
     add_breadcrumb($lexicon_nav_search);
 
     $search_query = $db->query("SELECT * FROM ".TABLE_PREFIX."lexicon_entries 
-    WHERE (title REGEXP '[[:<:]]".$keyword."[[:>:]]' OR entrytext REGEXP '[[:<:]]".$keyword."[[:>:]]')
+    WHERE (title LIKE '%".$db->escape_string($keyword)."%' OR entrytext LIKE '%".$db->escape_string($keyword)."%')
     AND accepted = 1 
     ORDER BY linktitle ASC
     ");
