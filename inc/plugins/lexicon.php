@@ -439,6 +439,38 @@ function lexicon_admin_update_plugin(&$table) {
         // Datenbanktabellen & Felder
         lexicon_database();
 
+        // Collation prüfen und korrigieren
+        $charset = 'utf8mb4';
+        $collation = 'utf8mb4_unicode_ci';
+
+        $collation_string = $db->build_create_table_collation();
+        if (preg_match('/CHARACTER SET ([^\s]+)\s+COLLATE ([^\s]+)/i', $collation_string, $matches)) {
+            $charset = $matches[1];
+            $collation = $matches[2];
+        }
+
+        $databaseTables = [
+            "lexicon_categories",
+            "lexicon_entries"
+        ];
+
+        foreach ($databaseTables as $databaseTable) {
+            if ($db->table_exists($databaseTable)) {
+                $table = TABLE_PREFIX.$databaseTable;
+
+                $query = $db->query("SHOW TABLE STATUS LIKE '".$db->escape_string($table)."'");
+                $table_status = $db->fetch_array($query);
+                $actual_collation = strtolower($table_status['Collation'] ?? '');
+
+                $actual_collation = str_replace(['utf8mb3', 'utf8mb4'], 'utf8', $actual_collation);
+                $expected_collation = str_replace(['utf8mb3', 'utf8mb4'], 'utf8', $collation);
+
+                if (!empty($collation) && $actual_collation !== $expected_collation) {
+                    $db->query("ALTER TABLE {$table} CONVERT TO CHARACTER SET {$charset} COLLATE {$collation}");
+                }
+            }
+        }
+
         flash_message($lang->plugins_flash, "success");
         admin_redirect("index.php?module=rpgstuff-plugin_updates");
     }
@@ -1187,7 +1219,7 @@ function lexicon_database() {
 			PRIMARY KEY(`cid`),
 			KEY `cid` (`cid`)
 			)
-			ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci AUTO_INCREMENT=1
+			ENGINE=InnoDB ".$db->build_create_table_collation().";
 		");
     }
     // Einträge
@@ -1207,7 +1239,7 @@ function lexicon_database() {
 			PRIMARY KEY(`eid`),
 			KEY `eid` (`eid`)
 			)
-			ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci AUTO_INCREMENT=1
+			ENGINE=InnoDB ".$db->build_create_table_collation().";
 		");
     }
 }
@@ -1424,7 +1456,7 @@ function lexicon_templates($mode = '') {
 							<div class="lexicon-entry">
 								<div class="entry-headline">{$lang->lexicon_nav_add_entry}</div>
 								<div class="entry">
-									<form  action="lexicon.php?action=do_entry&edit={$eid}" method="post">
+									<form action="lexicon.php?action=do_entry" method="post">
 										<table width="100%">
 											<tbody>			
 												<tr>
@@ -2512,12 +2544,47 @@ function lexicon_stylesheet_update() {
 // UPDATE CHECK
 function lexicon_is_updated(){
 
-    global $db, $mybb;
+    global $db;
 
-    if ($db->table_exists("lexicon_categories")) {
-        return true;
+    $charset = 'utf8';
+    $collation = 'utf8_general_ci';
+
+    $collation_string = $db->build_create_table_collation();
+    if (preg_match('/CHARACTER SET ([^\s]+)\s+COLLATE ([^\s]+)/i', $collation_string, $matches)) {
+        $charset = strtolower($matches[1]);
+        $collation = strtolower($matches[2]);
     }
-    return false;
+
+    $databaseTables = [
+		"lexicon_categories",
+		"lexicon_entries"
+	];
+
+    foreach ($databaseTables as $table_name) {
+        if (!$db->table_exists($table_name)) {
+            return false;
+        }
+
+        $full_table_name = TABLE_PREFIX . $table_name;
+
+        $query = $db->query("
+            SELECT TABLE_COLLATION 
+            FROM information_schema.TABLES 
+            WHERE LOWER(TABLE_SCHEMA) = LOWER(DATABASE()) 
+              AND TABLE_NAME = '".$db->escape_string($full_table_name)."'
+        ");
+        $result = $db->fetch_array($query);
+        $actual_collation = strtolower(trim($result['TABLE_COLLATION'] ?? ''));
+        
+        $actual_collation = str_replace(['utf8mb3', 'utf8mb4'], 'utf8', $actual_collation);
+        $expected_collation = str_replace(['utf8mb3', 'utf8mb4'], 'utf8', $collation);
+
+        if ($actual_collation !== $expected_collation) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 function lexicon_columnExists($table, $column) {
