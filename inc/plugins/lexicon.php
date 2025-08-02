@@ -29,7 +29,7 @@ function lexicon_info(){
 		"website"	=> "hhttps://github.com/little-evil-genius/Lexikon",
 		"author"	=> "little.evil.genius",
 		"authorsite"	=> "https://storming-gates.de/member.php?action=profile&uid=1712",
-		"version"	=> "1.2.2",
+		"version"	=> "1.2.3",
 		"compatibility" => "18*"
 	);
 }
